@@ -1,6 +1,6 @@
-### self-app
+### Video Localizer - Translator
 
-Self sample learning system
+A automated video localizer/translator for native languages.
 
 ### Installation
 
