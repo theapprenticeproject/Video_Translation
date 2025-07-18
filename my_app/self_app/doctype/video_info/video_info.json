@@ -1,0 +1,96 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:{title}-{#####}",
+ "creation": "2025-06-28 12:09:28.057904",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "educator",
+  "target_lang",
+  "column_break_sjod",
+  "original_vid",
+  "section_break_twg4",
+  "original_audio_extracted",
+  "created_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "educator",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Educator",
+   "options": "Educator Profile",
+   "reqd": 1
+  },
+  {
+   "fieldname": "target_lang",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Target Language",
+   "options": "Hindi\nMarathi\nPunjabi",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_sjod",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Upload Video",
+   "fieldname": "original_vid",
+   "fieldtype": "Attach",
+   "in_list_view": 1,
+   "label": "Original Video",
+   "reqd": 1
+  },
+  {
+   "fieldname": "original_audio_extracted",
+   "fieldtype": "Attach",
+   "label": "Original Audio"
+  },
+  {
+   "fieldname": "section_break_twg4",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "created_on",
+   "fieldtype": "Datetime",
+   "label": "Created On"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-06-29 11:31:59.446294",
+ "modified_by": "Administrator",
+ "module": "self-app",
+ "name": "Video Info",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

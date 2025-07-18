@@ -1,0 +1,86 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "AP.#####",
+ "creation": "2025-06-10 18:45:14.966071",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "article",
+  "reviewer_prof",
+  "rating",
+  "comment",
+  "review_date",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "rating",
+   "fieldtype": "Int",
+   "label": "rating"
+  },
+  {
+   "fieldname": "comment",
+   "fieldtype": "Small Text",
+   "label": "comment"
+  },
+  {
+   "fieldname": "review_date",
+   "fieldtype": "Date",
+   "label": "review_date"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Review",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "article",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "article",
+   "options": "Article",
+   "reqd": 1
+  },
+  {
+   "fieldname": "reviewer_prof",
+   "fieldtype": "Link",
+   "label": "reviewer",
+   "options": "Reviewer Profile",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2025-06-15 20:12:00.963863",
+ "modified_by": "Administrator",
+ "module": "self-app",
+ "name": "Review",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

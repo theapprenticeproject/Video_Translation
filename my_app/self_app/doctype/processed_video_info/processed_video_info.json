@@ -1,0 +1,89 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-06-29 11:32:32.171947",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "orginal_vid",
+  "translated_aud",
+  "translated_srt",
+  "localized_vid",
+  "section_break_xwdl",
+  "status",
+  "column_break_rrje",
+  "processed_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "orginal_vid",
+   "fieldtype": "Link",
+   "label": "Original Video ",
+   "options": "Video Info",
+   "read_only": 1
+  },
+  {
+   "fieldname": "translated_aud",
+   "fieldtype": "Attach",
+   "label": "Translated Audio",
+   "read_only": 1
+  },
+  {
+   "fieldname": "translated_srt",
+   "fieldtype": "Attach",
+   "label": "Translated Subtitles"
+  },
+  {
+   "fieldname": "localized_vid",
+   "fieldtype": "Attach",
+   "label": "Localized Video",
+   "read_only": 1
+  },
+  {
+   "fieldname": "processed_on",
+   "fieldtype": "Datetime",
+   "label": "Processed On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending\nCompleted\nFailed"
+  },
+  {
+   "fieldname": "section_break_xwdl",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_rrje",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-06-29 16:05:49.718608",
+ "modified_by": "Administrator",
+ "module": "self-app",
+ "name": "Processed Video Info",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
