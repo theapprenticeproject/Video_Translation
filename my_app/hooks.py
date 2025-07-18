@@ -1,7 +1,7 @@
 app_name = "my_app"
-app_title = "self-app"
+app_title = "Video Translator"
 app_publisher = "VT"
-app_description = "Self sample learning system"
+app_description = "automating video localization"
 app_email = "abcd55@proton.com"
 app_license = "mit"
 
@@ -10,7 +10,7 @@ app_license = "mit"
 
 # required_apps = []
 
-# Each item in the list will be shown as an app in the apps page
+# Each item in the list will be shown as an app in the apps page    
 # add_to_apps_screen = [
 # 	{
 # 		"name": "my_app",
