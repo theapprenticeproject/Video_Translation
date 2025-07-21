@@ -1,4 +1,4 @@
-### Video Localizer - Translator
+## Video Localizer - Translator
 
 A automated video localizer/translator for native languages.
 
@@ -8,8 +8,14 @@ You can install this app using the [bench](https://github.com/frappe/bench) CLI:
 
 ```bash
 cd $PATH_TO_YOUR_BENCH
-bench get-app $URL_OF_THIS_REPO --branch test-learn
+bench get-app git@github.com:theapprenticeproject/Video_Translation.git --branch main
 bench install-app my_app
+```
+
+#### Optional Dependency
+```
+bench get-app git@github.com:Z4nzu/frappe-preview-attachment.git
+bench --site your-site-name install-app preview_attachment
 ```
 
 ### Contributing
