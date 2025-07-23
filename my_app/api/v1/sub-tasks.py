@@ -1,23 +1,4 @@
-import frappe, subprocess, os, base64, requests
-
-@frappe.whitelist()  
-def audio_extraction(filename: str):
-    input_path=frappe.get_site_path("public", "files", filename)
-    if not os.path.exists(input_path):
-        frappe.throw(f"{filename} not found")
-
-    output_file=f"processed_video_aud.wav"
-    output_path=frappe.get_site_path("public", "files", output_file)
-
-    cmd=["ffmpeg", "-i", input_path, "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1", output_path]
-
-    try:
-        subprocess.run(cmd, text=True, check=True)
-        return f"files/{output_file}"
-    except subprocess.CalledProcessError as e:
-        frappe.log_error(f"Ffmpeg error: {e}")
-        frappe.throw("Video-audio extraction error")
-
+import frappe, base64, requests
 
 
 @frappe.whitelist()
