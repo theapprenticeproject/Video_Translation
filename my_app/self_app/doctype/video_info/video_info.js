@@ -11,7 +11,6 @@ frappe.ui.form.on("Video Info", {
 
     onload: (frm)=>{
         frappe.realtime.on("audio_extraction_completed", (data)=>{
-            console.log(data)
             if (data.videopath_url === frm.doc.original_vid){
                 const audiopath=data.audiofile_url
                 frm.set_value("original_audio_extracted", audiopath)

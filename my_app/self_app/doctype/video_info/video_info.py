@@ -10,7 +10,9 @@ class VideoInfo(Document):
 		if self.original_vid and not self.original_audio_extracted:
 			try:
 				print("self.original_vid: ", self.original_vid)
-				file_info=file_retitling(self.original_vid, "original", self.title)
+				num_name=self.name.replace(self.title+"-", "")
+				print(num_name)
+				file_info=file_retitling(self.original_vid, "original", num_name) # passing the record's number
 				self.db_set("original_vid", file_info["new_file_url_doc"], commit=True)
 				print("self.original_vid after db_set: ", self.original_vid)
 
