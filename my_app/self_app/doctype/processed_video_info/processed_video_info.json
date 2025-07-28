@@ -5,7 +5,7 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "orginal_vid",
+  "orgin_vid_link",
   "translated_aud",
   "translated_srt",
   "localized_vid",
@@ -15,13 +15,6 @@
   "processed_on"
  ],
  "fields": [
-  {
-   "fieldname": "orginal_vid",
-   "fieldtype": "Link",
-   "label": "Original Video ",
-   "options": "Video Info",
-   "read_only": 1
-  },
   {
    "fieldname": "translated_aud",
    "fieldtype": "Attach",
@@ -58,13 +51,20 @@
   {
    "fieldname": "column_break_rrje",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "orgin_vid_link",
+   "fieldtype": "Link",
+   "label": "Original Video ",
+   "options": "Video Info",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-29 16:05:49.718608",
- "modified_by": "Administrator",
+ "modified": "2025-07-28 18:28:22.033470",
+ "modified_by": "sysadm@proton.com",
  "module": "self-app",
  "name": "Processed Video Info",
  "owner": "Administrator",
