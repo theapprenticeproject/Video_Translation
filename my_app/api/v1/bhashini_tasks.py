@@ -1,9 +1,7 @@
 import frappe, base64, requests
 
-
-@frappe.whitelist()
-def lang_detection(filename: str):   
-    input_path=frappe.get_site_path("public", "files", filename)
+def lang_detection(audio_filename: str):   
+    input_path=frappe.get_site_path("public", "files", "original", audio_filename)
     with open(input_path, "rb") as aud_file:
         bin_aud=aud_file.read()
     aud_b64_data=base64.b64encode(bin_aud).decode("utf-8")
@@ -26,21 +24,22 @@ def lang_detection(filename: str):
         }
         
         response=requests.post("https://dhruva-api.bhashini.gov.in/services/inference/audiolangdetection", json=body, headers=headers)
-        print(response.json()["output"][0]["langPrediction"][0]["langCode"])
+        detected_lang=response.json()["output"][0]["langPrediction"][0]["langCode"]
+        print(detected_lang)
+        return detected_lang
         
     except requests.RequestException as e:
         frappe.throw("Error Calling Detection API: ", e)
 
     
 # for non-hindi native languages
-@frappe.whitelist()
-def STS_pipe(audio_file: str, lang_code: str, src_lang_code: str):
-    input_path=frappe.get_site_path("public", "files", audio_file)
+def STS_pipe(audio_filename: str, lang_code: str, src_lang_code: str):
+    input_path=frappe.get_site_path("public", "files", audio_filename)
     with open(input_path, "rb") as f:
         b=f.read()
     b64_aud=base64.b64encode(b).decode("utf-8")
 
-    output_path=frappe.get_site_path("public", "files", "david2_hi2.wav")
+    output_path=frappe.get_site_path("public", "files", "processed", f"sts_{audio_filename}")
     payload={
         "pipelineTasks": [
             {
