@@ -4,7 +4,12 @@ from elevenlabs import ElevenLabs
 client=ElevenLabs(api_key=frappe.conf.elevenlabs_api_key)
 
 @frappe.whitelist()
-def dubbing(video_filename: str):
+def dubbing(video_filename: str, processed_docname: str ):
+    processed_doc=frappe.get_doc("Processed Video Info", processed_docname)
+    processed_doc.status="Dubbing in progress..."
+    processed_doc.save(ignore_permissions=True)
+    frappe.db.commit()
+
 
     def wait_for_dubbing_completion(dubbing_id:str)-> bool:
         MAX_ATTEMPTS = 120
@@ -41,9 +46,13 @@ def dubbing(video_filename: str):
         with open(output_videopath, "wb") as file:
             for chunk in client.dubbing.get_dubbed_file(dubbing_id, "hi"):
                 file.write(chunk)
+                            
         return f"/files/processed/{output_filename}"
 
     else:
+        processed_doc.status="Dubbing failed or timed out"
+        processed_doc.save(ignore_permissions=True)
+        frappe.db.commit()
         return {
             "status":"failed",
             "message":"Dubbing failed or timed out"
