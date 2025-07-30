@@ -11,5 +11,5 @@ class ProcessedVideoInfo(Document):
 		video_info=self.origin_vid_link
 		if video_info:
 			video_lang=frappe.db.get_value("Video Info", video_info, "target_lang")
-			number=frappe.model.naming.make_autoname("VID-#####")
+			number=frappe.model.naming.make_autoname("VID-.#####")
 			self.name=f'{video_lang}-{video_info}-{number.split("-")[-1]}'

@@ -5,7 +5,7 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "orgin_vid_link",
+  "origin_vid_link",
   "translated_aud",
   "translated_srt",
   "localized_vid",
@@ -40,9 +40,8 @@
   },
   {
    "fieldname": "status",
-   "fieldtype": "Select",
-   "label": "Status",
-   "options": "Pending\nCompleted\nFailed"
+   "fieldtype": "Data",
+   "label": "Status"
   },
   {
    "fieldname": "section_break_xwdl",
@@ -53,7 +52,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "orgin_vid_link",
+   "fieldname": "origin_vid_link",
    "fieldtype": "Link",
    "label": "Original Video ",
    "options": "Video Info",
@@ -63,7 +62,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-28 18:28:22.033470",
+ "modified": "2025-07-29 17:11:59.491408",
  "modified_by": "sysadm@proton.com",
  "module": "self-app",
  "name": "Processed Video Info",
