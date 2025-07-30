@@ -3,7 +3,7 @@ from elevenlabs import ElevenLabs
 
 client=ElevenLabs(api_key=frappe.conf.elevenlabs_api_key)
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=True)
 def dubbing(video_filename: str, processed_docname: str ):
     processed_doc=frappe.get_doc("Processed Video Info", processed_docname)
     processed_doc.status="Dubbing in progress..."
@@ -33,12 +33,14 @@ def dubbing(video_filename: str, processed_docname: str ):
     filepath=frappe.get_site_path("public", "files", "original", video_filename)
 
     with open(filepath, "rb") as videofile:
-        response=client.dubbing.dub_a_video_or_an_audio_file(
+        response=client.dubbing.create(
             file=videofile,
             target_lang="hi",
-            mode="automatic"
+            mode="automatic",
+            watermark=True
         )
     dubbing_id=response.dubbing_id
+    print("dubbing id: ", dubbing_id)
     if wait_for_dubbing_completion(dubbing_id):
 
         output_filename=f'dub_{video_filename}'
