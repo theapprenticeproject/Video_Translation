@@ -1,63 +1,53 @@
 import frappe, os, shutil
 
-def file_retitling(original_file_url: str, folder_suffix: str, title: str) -> dict:
-    '''Renaming uploaded video filename with the generated title for that video_info record and returns info in JSON- dict '''
 
-    original_filename_raw = original_file_url.replace("/files/", "") 
-    original_path_on_disk = frappe.get_site_path("public", "files", original_filename_raw)
+def file_retitling(original_file_url: str, folder_suffix: str, name: str) -> dict:
+    """
+    Renames the uploaded video filename using the generated name for that video_info record,
+    and returns file metadata as a dictionary.
     
-    print("original_filename_raw : ", original_filename_raw)
-    print("original_path_on_disk: ", original_path_on_disk)
+    Args:
+        original_file_url (str): The URL to the original uploaded file (e.g., /files/sample123.mp4).
+        folder_suffix (str): Folder name inside /public/files/ to move the file into.
+        name (str): A unique identifier (e.g., the doc.name) to append to the filename.
 
-    if not os.path.exists(original_path_on_disk):
-        frappe.throw(f"Uploaded file {original_file_url} not found at {original_path_on_disk} on disk.")
+    Returns:
+        dict: Metadata including original and new filenames, paths, and URLs.
+    """
 
-    base, ext = os.path.splitext(original_filename_raw) 
+    original_filename = original_file_url.replace("/files/", "")
+    print("original_filename:", original_filename)
 
-    safe_title = title.replace(" ", "-").replace("/", "-").replace("\\", "-").replace(":", "-").replace("*", "-").replace("?", "-").replace("\"", "-").replace("<", "-").replace(">", "-").replace("|", "-")
-    
-    new_base_for_filename = f"{base}_"+safe_title
-    
-    new_filename_with_ext = f'{new_base_for_filename}{ext}'
+    original_path = frappe.get_site_path("public", "files", original_filename)
+    print("original_path:", original_path)
 
-    # Define the target directory path (e.g., ./fralocal.test/public/files/original/)
-    target_folder_absolute_path = frappe.get_site_path("public", "files", folder_suffix)
-    os.makedirs(target_folder_absolute_path, exist_ok=True) # Ensure the 'original' directory exists
+    if not os.path.exists(original_path):
+        frappe.throw(f"Uploaded file {original_file_url} not found at {original_path}")
 
-    final_new_path_on_disk = os.path.join(target_folder_absolute_path, new_filename_with_ext)
-    
-    print("final_new_path_on_disk before moving : ", final_new_path_on_disk)
+    base, ext = os.path.splitext(original_filename)
+    new_base = f"{base}_{name}"
+    new_filename = f"{new_base}{ext}"
 
-    try:
-        # Check if the file is ALREADY at the final target path with the new name.
-        # This handles the scenario where the on_update hook runs again for an already processed video.
-        if os.path.exists(final_new_path_on_disk) and os.path.samefile(original_path_on_disk, final_new_path_on_disk):
-            print(f"File already at final target path: {final_new_path_on_disk}. Skipping physical move.")
-        else:
-            # If a different file exists at the target, remove it to prevent shutil.move errors.
-            if os.path.exists(final_new_path_on_disk) and not os.path.samefile(original_path_on_disk, final_new_path_on_disk):
-                os.remove(final_new_path_on_disk)
-                frappe.log_error(f"Removed pre-existing different file at target path: {final_new_path_on_disk}")
-            
-            shutil.move(original_path_on_disk, final_new_path_on_disk)
-            frappe.log_error("File physically moved and renamed:", f"From {original_path_on_disk} to {final_new_path_on_disk}")
+    dest_folder = frappe.get_site_path("public", "files", folder_suffix)
+    os.makedirs(dest_folder, exist_ok=True)
 
-    except Exception as e:
-        frappe.log_error(f"Error during physical file move/rename from {original_path_on_disk} to {final_new_path_on_disk}: {e}", frappe.get_traceback())
-        frappe.throw(f"Error physically moving/renaming video file: {e}")
+    # Construct full path for renamed file
+    new_path = os.path.join(dest_folder, new_filename)
+    print("new path before moving:", new_path)
 
-    # The URL that Frappe's attach field will recognize
-    new_file_url_for_doc = f'/files/{folder_suffix}/{new_filename_with_ext}'
+    shutil.move(original_path, new_path)
 
-    file_info={
-        "original_filename": original_filename_raw, 
-        "original_filepath": original_path_on_disk,
+    new_file_url_doc = f"/files/{folder_suffix}/{new_filename}"
+
+    file_info = {
+        "original_filename": original_filename,
+        "original_filepath": original_path,
         "folder_suffix": folder_suffix,
         "extension": ext,
-        "new_filepath": final_new_path_on_disk, # This is the absolute path to the MOVED AND RENAMED file for ffmpeg
-        "new_filename": new_filename_with_ext,
-        "new_basename": new_base_for_filename, 
-        "new_file_url_doc": new_file_url_for_doc 
+        "new_filepath": new_path,
+        "new_filename": new_filename,  # with extension
+        "new_basename": new_base,
+        "new_file_url_doc": new_file_url_doc
     }
 
     return file_info

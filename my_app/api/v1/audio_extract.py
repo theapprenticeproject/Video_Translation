@@ -1,31 +1,47 @@
-import frappe, os, subprocess, time
+import frappe, subprocess
 
-def audio_extraction(videofile_base: str, videofile_path: str, output_folder_suffix: str, docname: str, videofile_url: str):
-    print("starting extraction, before input_path")
-    input_path=videofile_path
-    print("input Path", input_path)
-    if not os.path.exists(input_path):
-        frappe.throw(f"{input_path} not found")
+def audio_extraction(videofile: str):
+    print("Input path in audio extraction:", videofile)
 
-    output_filename=f"{videofile_base}.wav"
-    output_path=os.path.join(frappe.get_site_path("public", "files", output_folder_suffix), output_filename)
-    print("Output path : ", output_path)
+    split_file_list = videofile.replace("/files/", "").split("/")
+    print("Split file list:", split_file_list)
 
-    time.sleep(0.6)
+    folder_suffix = split_file_list[0]
+    video_filename = split_file_list[1]
 
-    cmd=["ffmpeg", "-i", input_path, "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1", output_path]
-    print("before try block")
+    input_path = frappe.get_site_path("public", "files", folder_suffix, video_filename)
+    print("Input path of video file:", input_path)
+
+    audio_filename = video_filename.replace(".mp4", ".wav")
+    output_path = frappe.get_site_path("public", "files", folder_suffix, audio_filename)
+    print("Output path of audio file:", output_path)
+
+    cmd = ["ffmpeg", "-i", input_path, "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1", output_path]
+
+    print("Preparing to run ffmpeg command...")
+
     try:
-        print("before subprocess runs")
+        print("Running subprocess command...")
         subprocess.run(cmd, text=True, check=True)
-        print(f'Audio extraction done Output:  {output_path}\n')
 
-        video_info_doc=frappe.get_doc("Video Info", docname) # getting the doctype instance
-        audiofile_url=f'/files/{output_folder_suffix}/{output_filename}'
-        video_info_doc.original_audio_extracted=audiofile_url
-        frappe.db.commit()
+        audiofile_url = f"/files/{folder_suffix}/{audio_filename}"
+        print("Audio file URL:", audiofile_url)
 
-        frappe.publish_realtime(event="audio_extraction_completed", message={"audiofile_url": audiofile_url, "videopath_url": videofile_url})
+        if folder_suffix == "original":
+            frappe.publish_realtime(
+                event="audio_extraction_completed",
+                message={"audiofile_url": audiofile_url, "audio_filename":audio_filename, "video_filename":video_filename}
+            )
+
     except subprocess.CalledProcessError as e:
-        frappe.log_error(f"Ffmpeg error: {e}")
+        print("ffmpeg error:", e)
         frappe.throw("Video-audio extraction error")
+
+
+@frappe.whitelist()
+def trigger_audio_extract(videofile_url: str):
+    frappe.enqueue(
+        method="my_app.api.v1.audio_extract.audio_extraction",
+        queue="short",
+        videofile=videofile_url
+    )

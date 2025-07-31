@@ -1,32 +1,68 @@
 // Copyright (c) 2025, VT and contributors
 // For license information, please see license.txt
 
+video_info_docname = ""
 frappe.ui.form.on("Video Info", {
+    onload: (frm) => {
+        // Listen for video file renaming completion
+        frappe.realtime.on("video_file_structured", (data) => {
+            console.log("Received realtime event:", data);
 
-    original_vid: (frm)=>{
-        if (frm.doc.original_vid){
-            frappe.show_alert("Video Uploaded", 4)
-        }
-    },
-
-    onload: (frm)=>{
-        frappe.realtime.on("audio_extraction_completed", (data)=>{
-            if (data.videopath_url === frm.doc.original_vid){
-                const audiopath=data.audiofile_url
-                frm.set_value("original_audio_extracted", audiopath)
-                .then(()=>{
-                    frappe.show_alert({"message": __("Audio Extracted"), indicator: "green"}, 3)
-                    console.log(audiopath, "audiopath after realtime event published")
-                    frm.save()
-                    console.log("after save")
-                })
-                .catch((e)=>{
-                    console.log("Error setting audiopath", e)
-                    frm.save()
-                })
-            }else{
-                console.log("Realtime videopath_url mismatch", data.videopath_url, "vs", frm.doc.original_vid)
+            if (frm.doc.original_vid !== data.videofile_url) {
+                frm.set_value("original_vid", data.videofile_url).then(() => {
+                    frm.refresh_field("original_vid");
+                    frappe.show_alert({ message: __("Video Uploaded and Structured"), indicator: "green" }, 3);
+                    video_info_docname = data.video_info_docname
+                    setTimeout(() => { }, 750);
+                });
+            } else {
+                console.log("Video path already set correctly, skipped");
             }
-        })
+        });
+
+        // Listen for audio extraction completion
+        frappe.realtime.on("audio_extraction_completed", (data) => {
+            console.log("Original audio extracted before setting value is:", data.audiofile_url);
+
+            frm.set_value("original_audio_extracted", data.audiofile_url);
+            frm.save();
+            frappe.show_alert({ message: __("Audio extracted"), indicator: "green" }, 3);
+            setTimeout(() => { }, 1500);
+            console.log("before frm.call for trigger pipeline")
+            frm.call({
+                method: "my_app.media-queues.tasks_pipe.trigger_pipeline",
+                args: {
+                    video_info_docname: video_info_docname,
+                    audio_filename: data.audio_filename,
+                    video_filename: data.video_filename
+                },
+                callback: () => {
+                    console.log("callback after sending request to trigger_pipeline")
+                    frappe.show_alert({ message: __("Translation Pipeline has started."), indicator: "yellow" })
+                }
+            })
+        });
     },
+
+    refresh: (frm) => {
+        console.log("After saving working?");
+
+        if (frm.doc.original_vid && !frm.doc.original_audio_extracted) {
+            frm.add_custom_button("Start Process", () => {
+                frm.clear_custom_buttons();
+                frappe.show_alert("Starting video processing...", "orange");
+
+                frappe.call({
+                    method: "my_app.api.v1.audio_extract.trigger_audio_extract",
+                    args: {
+                        videofile_url: frm.doc.original_vid
+                    },
+                    callback: (data) => {
+                        frappe.show_alert("Refresh & Click 'Start Process' again if audio not extracted.")
+                    }
+                });
+            });
+        }
+    }
+
 });
