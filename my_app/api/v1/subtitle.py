@@ -6,16 +6,18 @@ client=Groq(
 )
 
 @frappe.whitelist()
-def srt_generate(audio_file: str, langCode: str):
-    audio_file_path=frappe.get_site_path("public", "files", audio_file)
-    subtitled_video=frappe.get_site_path("public", "files", "subtitled_vid.mp4")
-    translatedVid=frappe.get_site_path("public", "files", "david-dub-hindi.mp4")
+def srt_generate(video_filename: str, audio_filename: str, langCode: str, processed_docname: str):
+    processed_doc=frappe.get_doc("Processed Video Info", processed_docname)
+    audio_file_path=frappe.get_site_path("public", "files", "processed", audio_filename)
+    subtitled_video=frappe.get_site_path("public", "files", "processed",f"sub_{video_filename}")
+    translatedVid=frappe.get_site_path("public", "files", "processed",video_filename)
+
     def format_time(seconds):
         hours=math.floor(seconds/3600)
         seconds%=3600
         minutes=math.floor(seconds/60)
         seconds%=60
-        milliseconds=math.floor((seconds - math.floor(seconds))*1000)
+        milliseconds=math.floor((seconds - math.floor(seconds))*1000)   
         seconds=math.floor(seconds)
         formatted_time=f'{hours:02d}:{minutes:02d}:{seconds:02d},{milliseconds:03d}'
 
@@ -23,7 +25,7 @@ def srt_generate(audio_file: str, langCode: str):
 
 
     def generate_srt_file(segments):
-        transcript_timestamps=frappe.get_site_path("public", "files", "subtitles_timestamps.srt")
+        transcript_timestamps=frappe.get_site_path("public", "files", "processed","subtitles_timestamps.srt")
         with open(transcript_timestamps, "w") as f:
             text=""
             for idx, segment in enumerate(segments):
@@ -48,7 +50,24 @@ def srt_generate(audio_file: str, langCode: str):
 
     def add_subtitle_vid(input_vid, subtitle_file, output_video):
         try:
-            subprocess.call(["ffmpeg", "-i", input_vid, "-i", subtitle_file, "-c", "copy", "-c:s", "mov_text", output_video])    
+            subprocess.call(["ffmpeg", "-i", input_vid, "-i", subtitle_file, "-c", "copy", "-c:s", "mov_text", output_video])
+
+            processed_doc.status="Subtitle added to translated video"
+            processed_doc.save(ignore_permissions=True)
+            frappe.db.commit()
+                
         except subprocess.SubprocessError as e:
-            frappe.throw('ffmpeg- Video Subtitling error')            
+            processed_doc.status="Subtitle Generation Failed - subprocess"
+            processed_doc.save(ignore_permissions=True)
+            frappe.db.commit()
+
+            frappe.throw('ffmpeg- Video Subtitling error : ', e)
+
+        except Exception as err:
+            processed_doc.status="Subtitle Generation Failed - exception"
+            processed_doc.save(ignore_permissions=True)
+            frappe.db.commit()
+            
+            frappe.throw("Error during Subtitling generation : ", err)            
+
  
