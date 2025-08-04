@@ -1,6 +1,6 @@
 ## Video Localizer - Translator
 
-A automated video localizer/translator for native languages.
+A automated video localizer/translator for native Indian languages.
 
 ### Installation
 
