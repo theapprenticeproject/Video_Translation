@@ -17,6 +17,15 @@ bench install-app my_app
 bench get-app git@github.com:Z4nzu/frappe-preview-attachment.git
 bench --site your-site-name install-app preview_attachment
 ```
+#### Python Depedency Management (using `uv`)
+Install `uv` : (official site : https://docs.astral.sh/uv/getting-started/installation/)
+```
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+Install Dependencies: 
+```
+uv pip install -r pyproject.toml
+```
 
 ### Contributing
 
