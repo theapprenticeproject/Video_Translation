@@ -12,7 +12,7 @@ bench get-app git@github.com:theapprenticeproject/Video_Translation.git --branch
 bench install-app my_app
 ```
 
-#### Optional Dependency
+#### Optional Dependency (Video Preview app)
 ```
 bench get-app git@github.com:Z4nzu/frappe-preview-attachment.git
 bench --site your-site-name install-app preview_attachment

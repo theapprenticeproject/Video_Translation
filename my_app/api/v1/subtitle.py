@@ -5,13 +5,13 @@ client=Groq(
     api_key=frappe.conf.groq_api_key
 )
 
-@frappe.whitelist()
 def srt_generate(video_filename: str, audio_filename: str, langCode: str, processed_docname: str):
     processed_doc=frappe.get_doc("Processed Video Info", processed_docname)
     audio_file_path=frappe.get_site_path("public", "files", "processed", audio_filename)
     subtitled_video=frappe.get_site_path("public", "files", "processed",f"sub_{video_filename}")
     translatedVid=frappe.get_site_path("public", "files", "processed",video_filename)
 
+    # formatting time in HH:MM:SS,mmm ; 'm' denoting milliseconds
     def format_time(seconds):
         hours=math.floor(seconds/3600)
         seconds%=3600
@@ -50,6 +50,7 @@ def srt_generate(video_filename: str, audio_filename: str, langCode: str, proces
 
     def add_subtitle_vid(input_vid, subtitle_file, output_video):
         try:
+            # adding 'soft subtitle' to the original video
             subprocess.call(["ffmpeg", "-i", input_vid, "-i", subtitle_file, "-c", "copy", "-c:s", "mov_text", output_video])
 
             processed_doc.status="Subtitle added to translated video"
