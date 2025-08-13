@@ -27,6 +27,39 @@ Install Dependencies:
 uv pip install -r pyproject.toml
 ```
 
+### Doctype Design
+The database schema contains this application's Doctypes: Video Info, Processed Video Info, & Educator Profile. The diagram below highlights the definitions and relationships for the doctypes afformentioned. 
+```mermaid
+erDiagram
+    VIDEO_INFO {
+        Data title
+        Link educator "Educator Profile"
+        Select target_lang "Hindi, Marathi, Punjabi"
+        Attach original_vid
+        Attach original_audio_extracted
+        Datetime created_on
+    }
+
+    PROCESSED_VIDEO_INFO {
+        Attach translated_aud
+        Attach translated_srt
+        Attach localized_vid
+        Datetime processed_on
+        Data status
+        Link origin_vid_link "Video Info"
+    }
+
+    EDUCATOR_PROFILE {
+        Data full_name
+        Data email
+        SmallText bio
+        AttachImage prof_pic
+    }
+
+    EDUCATOR_PROFILE ||--o{ VIDEO_INFO : "uploads"
+    VIDEO_INFO ||--o{ PROCESSED_VIDEO_INFO : "has"
+```
+
 ### Contributing
 
 This app uses `pre-commit` for code formatting and linting. Please [install pre-commit](https://pre-commit.com/#installation) and enable it for this repository:
