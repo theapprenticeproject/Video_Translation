@@ -13,6 +13,7 @@ bench install-app my_app
 ```
 
 #### Optional Dependency (Video Preview app)
+This frappe app provides a better preview for video uploads upon saving a record for a doctype, improving user exprience.
 ```
 bench get-app git@github.com:Z4nzu/frappe-preview-attachment.git
 bench --site your-site-name install-app preview_attachment
@@ -26,6 +27,11 @@ Install Dependencies:
 ```
 uv pip install -r pyproject.toml
 ```
+### Important Tools/Libraries Used
+* FFMPEG
+* Bhashini API Services ( STS, Lang Detection )
+* Groq STT ( Whisper )
+
 
 ### Doctype Design
 The database schema contains this application's Doctypes: Video Info, Processed Video Info, & Educator Profile. The diagram below highlights the definitions and relationships for the doctypes afformentioned. 
