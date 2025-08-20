@@ -65,6 +65,8 @@ erDiagram
     EDUCATOR_PROFILE ||--o{ VIDEO_INFO : "uploads"
     VIDEO_INFO ||--o{ PROCESSED_VIDEO_INFO : "has"
 ```
+### Current Custom API Flow
+<img width="2722" height="1178" alt="image" src="https://github.com/user-attachments/assets/5e5db122-bdeb-4f01-94c8-efbd360649eb" />
 
 ### Contributing
 
