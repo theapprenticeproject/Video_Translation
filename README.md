@@ -65,6 +65,9 @@ erDiagram
     EDUCATOR_PROFILE ||--o{ VIDEO_INFO : "uploads"
     VIDEO_INFO ||--o{ PROCESSED_VIDEO_INFO : "has"
 ```
+### Doctype Dataflow ( UX )
+<img width="2826" height="952" alt="image" src="https://github.com/user-attachments/assets/484acdac-d7da-41f4-af94-784e6416e022" />
+
 ### Current Custom API Flow
 <img width="2722" height="1178" alt="image" src="https://github.com/user-attachments/assets/5e5db122-bdeb-4f01-94c8-efbd360649eb" />
 
