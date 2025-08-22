@@ -95,7 +95,7 @@ The diagram showcases API flow which are versioned as v1 and v2 and details it a
 * **Common Processes**
     * When subtitles are needed (end of Video Processing Pipeline), FFMPEG is used to extract the audio track from the original video. This extracted audio is passed to a Speech-to-Text (STT) Groq service to generate a subtitle file (SRT/VTT).
 
-<img width="2722" height="1178" alt="image" src="https://github.com/user-attachments/assets/5e5db122-bdeb-4f01-94c8-efbd360649eb" />
+<img width="2746" height="1228" alt="image" src="https://github.com/user-attachments/assets/df6aae0e-7cb4-4061-b121-c2df131c2a9d" />
 
 ### Contributing
 
