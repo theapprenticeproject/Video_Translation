@@ -4,7 +4,10 @@
 ## 📋 Table of Contents 
 - [Installation](#-installation)
 - [Dependencies](#-dependencies)
+    - [`uv` - Python Package Manager](#python-depedency-management--using-uv-)
+    - [Tools/Libraries](#core-toolslibraries)
 - [Configuration](#️-configuration)
+- [Authentication](#-authentication)
 - [System Architecture](#️-system-architecture)
     - [Doctype Design](#-doctype-design)
     - [Doctype Dataflow & Processing](#-doctype-dataflow--processing--ux-)
@@ -31,11 +34,11 @@ This frappe app provides a better preview for video uploads upon saving a record
 bench get-app git@github.com:Z4nzu/frappe-preview-attachment.git
 bench --site your-site-name install-app preview_attachment
 ```
-Reference : https://github.com/Z4nzu/frappe-preview-attachment 
+Reference : [Frappe-Video-Preview-github ↗](https://github.com/Z4nzu/frappe-preview-attachment) 
 
 ## 🧰 Dependencies
-### Python Depedency Management ( using `uv` )
-Install `uv` : ( official site : https://docs.astral.sh/uv/getting-started/installation/ )
+### ⚡ Python Depedency Management ( using `uv` )
+Install `uv` : ( official site : [`uv` Installation Reference ↗](https://docs.astral.sh/uv/getting-started/installation/) )
 ```
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
@@ -43,30 +46,71 @@ Install Dependencies:
 ```
 uv pip install -r pyproject.toml
 ```
-### Core Tools/Libraries
-* FFMPEG
-* Bhashini API Services ( STS, Lang Detection )
-* Groq ( STT - Whisper )
-* Elevenlabs ( Dubbing API )
+### 🛠️ Core Tools/Libraries
+* **FFMPEG :**
+    * Used for audio/video processing ( e.g., extracting audio from uploaded video ).
+    * Installation Reference: [FFMPEG Official Docs ↗](https://ffmpeg.org/download.html)
+* **Bhashini :**
+    * GOI's language translation platform for Indian languages ( STS, ASR, Language Detection, etc. ).
+    * Required credentials are `userId`, `ulcaApiKey`, `email id`.  
+    * Setup Guide: [Bhashini Postman Docs ↗](https://dibd-bhashini.gitbook.io/bhashini-apis/)
+* **Groq :**
+    * Provides fast speech-to-text (STT), text-to-speech (TTS), and other capabilities.
+    * Docs: [Groq API Reference↗](https://console.groq.com/docs/overview)
+* **Elevenlabs :**
+    * Provides high-quality voice dubbing, multilingual TTS & other services.
+    * Docs: [ElevenLabs API ↗](https://elevenlabs.io/docs) 
 
 
-## 🛠️ Configuration
-We utilise Frappe `site_config.json` for settings & environment variables ( local dev setup ).
-```json
-{
- "db_name": "[Your_DB_Name]",
- "db_password": "[Your_DB_Password]",
- "db_type": "mariadb",
- "db_user": "_2019e6edbf45109e",
- "max_file_size": 104857600, // based on needs
- "encryption_key": "[Encrption_Key]",
- "api_auth_value": "[API Authentication value]",
- "groq_api_key":"gs-xxxxxx",
- "elevenlabs_api_key":"sk-xxxxxx"
-}
+## ⚙️ Configuration
+* We utilise Frappe `site_config.json` for settings & environment variables ( local dev setup ).
+    ```json
+    {
+    "db_name": "[Your_DB_Name]",
+    "db_password": "[Your_DB_Password]",
+    "db_type": "mariadb",
+    "db_user": "[Your_DB_User]",
+    "max_file_size": "[filesize_in_bytes]",
+    "encryption_key": "[Encrption_Key]",
+    "api_auth_value": "[Bhashini API Authentication value]",
+    "groq_api_key":"[GROQ_API_KEY]",
+    "elevenlabs_api_key":"[ELEVENLABS_API_KEY]"
+    }
+    ```
+    Values can be accessed by `frappe.conf.[variable_key_name]`.
+
+* The pipeline uses Frappe background job queue for concurrent processing. By default workers are defined in `common_site_config.json`. If the workload increases (e.g., handling multiple video translations simultaneously), you can scale by increasing the no.of workers in this configuration and thus increased parallelism.
+    ```json    
+    {
+    "background_workers": "[number_of_workers]",
+    "default_site": "[your_site_name]",
+    "developer_mode": true,
+    "file_watcher_port": 6787,
+    "frappe_user": "[your_user_name]",
+    "gunicorn_workers": "[2 x CPU_Cores + 1]",
+    "live_reload": true,
+    "rebase_on_pull": false,
+    "redis_cache": "redis://127.0.0.1:13000",
+    "redis_queue": "redis://127.0.0.1:11000",
+    "redis_socketio": "redis://127.0.0.1:13000",
+    "restart_supervisor_on_update": false,
+    "restart_systemd_on_update": false,
+    "serve_default_site": true,
+    "shallow_clone": true,
+    "socketio_port": 9000,
+    "use_redis_auth": false,
+    "webserver_port": 8000
+    }
+    ```
+    Tasks such as language detection and dubbing are offloaded to workers, preventing long-running operations from blocking main requests.
+* During setup, some of the values are set automatically.
+
+## 🔐 Authentication
+All API requests require authentication header using a token in the format:
+```ruby
+token <api_key>:<api_secret>
 ```
-All values can be loaded by `frappe.conf.[variable_key_name]`
-
+This must be included in the request headers to ensure only authorized clients can access pipeline entry points. These tokens can be stored securely in `site_config.json`.
 
 ## 🏗️ System Architecture
 
@@ -140,7 +184,7 @@ The diagram showcases API flow which are versioned as v1 and v2 and details it a
 ---
 
 ### 🔁 Sequence Diagram
-
+This diagram illustrates the end-to-end flow of video localization pipeline. It covers two translation paths and  how different components — video upload, audio extraction (FFmpeg), speech-to-text (Groq), translation, STS (Bhashini), text-to-speech (Elevenlabs) and final video assembly interact and flow step by step together. The goal is to provide clear view of request/response patterns across modules, making it easier to understand how the system orchestrates localization.
 ```mermaid
 sequenceDiagram
   autonumber
@@ -159,7 +203,7 @@ sequenceDiagram
   UserVideo->>FFMPEG: Extract audio (mp3 or wav)
   FFMPEG->>STSAPI: Send audio for translation
   STSAPI->>GroqSTT: Translated audio → transcription
-  GroqSTT->>Output: Generate SRT subtitle file
+  GroqSTT->>Output: Generate SRT/VTT subtitle file
   STSAPI->>FFMPEG: Return translated audio
   FFMPEG->>Output: Mux translated audio with video
   Output->>Output: Mux SRT with video (final subtitles)
@@ -169,7 +213,7 @@ sequenceDiagram
   %% V2 - Hindi Direct Translation
   UserVideo->>ElevenLabs: Send video for dubbing (Option I)
   ElevenLabs->>GroqSTT: Transcription from dubbed video
-  GroqSTT->>Output: Generate SRT subtitle file
+  GroqSTT->>Output: Generate SRT/VTT subtitle file
 
   UserVideo->>SieveData: Send video for dubbing + lip sync (Option II)
 
@@ -179,7 +223,7 @@ sequenceDiagram
 
 Follow Installation steps above to run locally.
 
-This app uses `pre-commit` for code formatting and linting. Please [install pre-commit](https://pre-commit.com/#installation) and enable it for this repository:
+`pre-commit` is for code formatting and linting. Please [install pre-commit](https://pre-commit.com/#installation) and enable it for this repository:
 
 ```bash
 cd apps/my_app
