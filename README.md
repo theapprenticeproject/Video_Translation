@@ -1,9 +1,22 @@
-## Video Localizer - Translator
+# Video Localizer - Translator
+***An automated video localizer/translator for native Indian languages.***
 
-A automated video localizer/translator for native Indian languages.
+## 📋 Table of Contents 
+- [Installation](#-installation)
+- [Dependencies](#-dependencies)
+- [Configuration](#️-configuration)
+- [System Architecture](#️-system-architecture)
+    - [Doctype Design](#-doctype-design)
+    - [Doctype Dataflow & Processing](#-doctype-dataflow--processing--ux-)
+    - [API Flows](#-current-api-flows)
+    - [Sequence Diagram](#-sequence-diagram)
+- [Contributing](#-contributing)
+- [License](#-license)
 
-### Installation
+---
 
+## 📦 Installation
+### Bench Installation
 You can install this app using the [bench](https://github.com/frappe/bench) CLI:
 
 ```bash
@@ -12,14 +25,17 @@ bench get-app git@github.com:theapprenticeproject/Video_Translation.git --branch
 bench install-app my_app
 ```
 
-#### Optional Dependency (Video Preview app)
-This frappe app provides a better preview for video uploads upon saving a record for a doctype, improving user exprience.
+### Video Preview app ( Optional )
+This frappe app provides a better preview for video uploads upon saving a record for a doctype, improving user experience.
 ```
 bench get-app git@github.com:Z4nzu/frappe-preview-attachment.git
 bench --site your-site-name install-app preview_attachment
 ```
-#### Python Depedency Management (using `uv`)
-Install `uv` : (official site : https://docs.astral.sh/uv/getting-started/installation/)
+Reference : https://github.com/Z4nzu/frappe-preview-attachment 
+
+## 🧰 Dependencies
+### Python Depedency Management ( using `uv` )
+Install `uv` : ( official site : https://docs.astral.sh/uv/getting-started/installation/ )
 ```
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
@@ -27,14 +43,34 @@ Install Dependencies:
 ```
 uv pip install -r pyproject.toml
 ```
-### Important Tools/Libraries Used
+### Core Tools/Libraries
 * FFMPEG
 * Bhashini API Services ( STS, Lang Detection )
 * Groq ( STT - Whisper )
 * Elevenlabs ( Dubbing API )
 
 
-### Doctype Design
+## 🛠️ Configuration
+We utilise Frappe `site_config.json` for settings & environment variables ( local dev setup ).
+```json
+{
+ "db_name": "[Your_DB_Name]",
+ "db_password": "[Your_DB_Password]",
+ "db_type": "mariadb",
+ "db_user": "_2019e6edbf45109e",
+ "max_file_size": 104857600, // based on needs
+ "encryption_key": "[Encrption_Key]",
+ "api_auth_value": "[API Authentication value]",
+ "groq_api_key":"gs-xxxxxx",
+ "elevenlabs_api_key":"sk-xxxxxx"
+}
+```
+All values can be loaded by `frappe.conf.[variable_key_name]`
+
+
+## 🏗️ System Architecture
+
+### 📐 Doctype Design
 The database schema contains this application's Doctypes: Video Info, Processed Video Info, & Educator Profile. The diagram below highlights the definitions and relationships for the doctypes afformentioned. 
 ```mermaid
 erDiagram
@@ -66,7 +102,9 @@ erDiagram
     EDUCATOR_PROFILE ||--o{ VIDEO_INFO : "uploads"
     VIDEO_INFO ||--o{ PROCESSED_VIDEO_INFO : "has"
 ```
-### Doctype Dataflow ( UX )
+---
+
+### 🗃️ Doctype Dataflow & Processing ( UX )
 The diagram illustrates dataflow for a video localization system that utilises background queues to handle a series of sequential functions/tasks. An overview of the steps are highlighted below:
 1. A user uploads a video with the details, which creates a **Video Info** record. This uploaded video is saved into the local filesystem under `public/` directory of `original/` (created manually).
 2. Once user initiates the process (by clicking "Start Process" button), a chain of background jobs begin. These jobs are managed by **Frappe Queues** system which allows multiple videos to be processed concurrently. Multiple queues are used each dedicated to a specific function:
@@ -78,7 +116,9 @@ This queuing system ensures each function is executed only after preceding funct
 
 <img width="2826" height="952" alt="image" src="https://github.com/user-attachments/assets/484acdac-d7da-41f4-af94-784e6416e022" />
 
-### Current Custom API Flow
+---
+
+### 🌐 Current API Flows
 The diagram showcases API flow which are versioned as v1 and v2 and details it as respectively below:  
 * **v1 - Non-Hindi Translations :** This flow is designed for multi-step translations often Indic languages other than hindi. Its a pipeline of API calls and local processing stages.
     * Detecting Source language is the common step among both API version which begins with Bhashini language detection API. Audio Extracted using FFMPEG & the output audio file is passed onto next step.
@@ -97,9 +137,47 @@ The diagram showcases API flow which are versioned as v1 and v2 and details it a
 
 <img width="2746" height="1228" alt="image" src="https://github.com/user-attachments/assets/df6aae0e-7cb4-4061-b121-c2df131c2a9d" />
 
-### Contributing
+---
 
-Follow the steps given over the top of this README file to run this app locally.
+### 🔁 Sequence Diagram
+
+```mermaid
+sequenceDiagram
+  autonumber
+
+  participant UserVideo
+  participant BhashiniAPI as Bhashini API
+  participant FFMPEG
+  participant STSAPI as Bhashini STS API
+  participant GroqSTT as Groq STT API
+  participant ElevenLabs as ElevenLabs Dubbing API
+  participant SieveData
+  participant Output as Final Output
+
+  %% V1 - Non-Hindi Translations
+  UserVideo->>BhashiniAPI: Detect source language
+  UserVideo->>FFMPEG: Extract audio (mp3 or wav)
+  FFMPEG->>STSAPI: Send audio for translation
+  STSAPI->>GroqSTT: Translated audio → transcription
+  GroqSTT->>Output: Generate SRT subtitle file
+  STSAPI->>FFMPEG: Return translated audio
+  FFMPEG->>Output: Mux translated audio with video
+  Output->>Output: Mux SRT with video (final subtitles)
+
+  Note over UserVideo,Output: V1 - Non-Hindi Translation Flow
+
+  %% V2 - Hindi Direct Translation
+  UserVideo->>ElevenLabs: Send video for dubbing (Option I)
+  ElevenLabs->>GroqSTT: Transcription from dubbed video
+  GroqSTT->>Output: Generate SRT subtitle file
+
+  UserVideo->>SieveData: Send video for dubbing + lip sync (Option II)
+
+  Note over ElevenLabs,SieveData: V2 - Hindi Direct Translation Options
+```
+## 🤝 Contributing
+
+Follow Installation steps above to run locally.
 
 This app uses `pre-commit` for code formatting and linting. Please [install pre-commit](https://pre-commit.com/#installation) and enable it for this repository:
 
@@ -115,6 +193,6 @@ Pre-commit is configured to use the following tools for checking and formatting 
 - prettier
 - pyupgrade
 
-### License
+## 📜 License
 
-mit
+The project is licensed under the MIT License. See the LICENSE file ( `license.txt` ) for details.
