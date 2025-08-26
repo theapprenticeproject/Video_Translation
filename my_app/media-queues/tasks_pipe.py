@@ -1,6 +1,9 @@
-import frappe, os
+'''Server side APIs being called are queued all from this file. Each function is queued after each queued is successful/terminated'''
+
+import frappe
 from my_app.api.v1.bhashini_tasks import lang_detection
 from my_app.api.v2.dub_labs import dubbing
+from my_app.api.v2.dub_sieve import dubbing_alt
 
 @frappe.whitelist()
 def trigger_pipeline(video_info_docname: str, audio_filename: str, video_filename:str):
@@ -41,7 +44,7 @@ def language_detection(audio_filename: str, processed_docname: str, video_filena
         print("Video Info target language selected : ",target_language)
         if target_language=="Hindi":
             frappe.enqueue(
-                method="my_app.media-queues.tasks_pipe.hindi_dubbing",
+                method="my_app.media-queues.tasks_pipe.alt_hindi_dub",
                 queue="long",
                 video_filename=video_filename,
                 processed_docname=processed_docname,
@@ -49,7 +52,7 @@ def language_detection(audio_filename: str, processed_docname: str, video_filena
             )   
         else:
             print("Target language is not hindi")
-
+# path-1
 def hindi_dubbing(video_filename: str, processed_docname: str, user: str):
     processed_videofile_url=dubbing(video_filename, processed_docname)
     processed_doc=frappe.get_doc("Processed Video Info", processed_docname)
@@ -65,3 +68,21 @@ def hindi_dubbing(video_filename: str, processed_docname: str, user: str):
         "email_content": f"Dubbing done in Hindi",
         "type": "Alert"
     }).insert(ignore_permissions=True)
+
+# path-2 
+def alt_hindi_dub(video_filename: str, processed_docname: str, user: str):
+    processed_videofile_url=dubbing_alt(video_filename, processed_docname)
+    processed_doc=frappe.get_doc("Processed Video Info", processed_docname)
+    processed_doc.status="Dubbing Completed"
+    processed_doc.localized_vid=processed_videofile_url
+    processed_doc.save(ignore_permissions=True)
+    frappe.db.commit()
+
+    frappe.get_doc({
+        "doctype":"Notification Log",
+        "for_user":user,
+        "subject":"Translation Completed",
+        "email_content":f"Dubbing Done in Hindi",
+        "type":"Alert"
+    }).insert(ignore_permissions=True)
+
