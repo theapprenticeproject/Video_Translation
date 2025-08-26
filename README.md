@@ -74,7 +74,8 @@ uv pip install -r pyproject.toml
     "encryption_key": "[Encrption_Key]",
     "api_auth_value": "[Bhashini API Authentication value]",
     "groq_api_key":"[GROQ_API_KEY]",
-    "elevenlabs_api_key":"[ELEVENLABS_API_KEY]"
+    "elevenlabs_api_key":"[ELEVENLABS_API_KEY]",
+    "sieve_api_key":"[SIEVE_API_KEY]"
     }
     ```
     Values can be accessed by `frappe.conf.[variable_key_name]`.

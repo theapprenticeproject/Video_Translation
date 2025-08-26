@@ -1,3 +1,5 @@
+<!-- Testing API calls through Client side -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,18 +15,16 @@
 
 <script>
   function callAPI() {
-    fetch("/api/method/my_app.api.v2.dub_labs.dubbing", {
+    fetch("/api/method/my_app.api.v2.dub_sieve.dubbing_alt", {
       method: "POST",
       credentials: "omit",
-      headers: {
-        "Authorization": "token 6fdda780ea39fac:ba7b0617cb9b484",
+      headers: { // replace the below tokens with your <api_key>:<api_secret>
+        // "Authorization": "token 6fdda780ea39fac:ba7b0617cb9b484",
         "Content-Type": "application/json"
       },
-      // body: JSON.stringify({
-      //   "audio_file": "david_en_aud.wav",
-      //   "lang_code": "en",
-      //   "src_lang_code": "hi"
-      // })
+      body: JSON.stringify({
+        "video_filename": "dub_short_explainer.mp4"
+      })
     })
     .then(res => res.json())
     .then(data => {
