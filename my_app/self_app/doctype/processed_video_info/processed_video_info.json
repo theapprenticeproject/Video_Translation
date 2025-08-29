@@ -7,12 +7,13 @@
  "field_order": [
   "origin_vid_link",
   "translated_aud",
-  "translated_srt",
+  "translated_subs",
   "localized_vid",
   "section_break_xwdl",
   "status",
   "column_break_rrje",
-  "processed_on"
+  "processed_on",
+  "video_preview"
  ],
  "fields": [
   {
@@ -20,11 +21,6 @@
    "fieldtype": "Attach",
    "label": "Translated Audio",
    "read_only": 1
-  },
-  {
-   "fieldname": "translated_srt",
-   "fieldtype": "Attach",
-   "label": "Translated Subtitles"
   },
   {
    "fieldname": "localized_vid",
@@ -57,12 +53,22 @@
    "label": "Original Video ",
    "options": "Video Info",
    "read_only": 1
+  },
+  {
+   "fieldname": "translated_subs",
+   "fieldtype": "Attach",
+   "label": "Translated Subtitles"
+  },
+  {
+   "fieldname": "video_preview",
+   "fieldtype": "HTML",
+   "label": "Video Preview"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-29 17:11:59.491408",
+ "modified": "2025-08-27 18:15:42.776234",
  "modified_by": "sysadm@proton.com",
  "module": "self-app",
  "name": "Processed Video Info",
