@@ -15,7 +15,7 @@
 
 <script>
   function callAPI() {
-    fetch("/api/method/my_app.api.v2.dub_sieve.dubbing_alt", {
+    fetch("/api/method/my_app.api.v1.subtitle.vtt_generate", {
       method: "POST",
       credentials: "omit",
       headers: { // replace the below tokens with your <api_key>:<api_secret>
@@ -23,7 +23,8 @@
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        "video_filename": "dub_short_explainer.mp4"
+        "audio_filename": "david_en_aud.wav",
+        "langCode":"en"
       })
     })
     .then(res => res.json())
@@ -37,6 +38,23 @@
     });
   }
 </script>
+<style>
+/* video::cue {
+  background: transparent;
+  color: white;
+  font-size: 16px;
+  text-shadow: 1px 1px 2px black;
+  line-height: 1.4;
+
+  position: absolute;
+  bottom: 2%;
+} */
+</style>
+<!-- <video controls width="640" height="360">
+  <source src="/files/david-dub-hindi.mp4" type="video/mp4">
+  <track src="/files/subtitles_timestamps.vtt" kind="subtitles" default>
+  Your browser does not support the video tag.
+</video> -->
 
 </body>
 </html>

@@ -16,7 +16,7 @@ def audio_extraction(videofile: str):
     output_path = frappe.get_site_path("public", "files", folder_suffix, audio_filename)
     print("Output path of audio file:", output_path)
 
-    cmd = ["ffmpeg", "-i", input_path, "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1", output_path]
+    cmd = ["ffmpeg", "-nostdin", "-i", input_path, "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1", output_path]
 
     print("Preparing to run ffmpeg command...")
 
@@ -32,7 +32,12 @@ def audio_extraction(videofile: str):
                 event="audio_extraction_completed",
                 message={"audiofile_url": audiofile_url, "audio_filename":audio_filename, "video_filename":video_filename}
             )
-
+        elif folder_suffix == "processed":
+            return {
+                "audiofile_url": audiofile_url,
+                "audio_filename": audio_filename,
+                "video_filename": video_filename
+            }            
     except subprocess.CalledProcessError as e:
         print("ffmpeg error:", e)
         frappe.throw("Video-audio extraction error")

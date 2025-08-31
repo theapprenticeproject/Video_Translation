@@ -130,7 +130,7 @@ erDiagram
 
     PROCESSED_VIDEO_INFO {
         Attach translated_aud
-        Attach translated_srt
+        Attach translated_subs
         Attach localized_vid
         Datetime processed_on
         Data status
@@ -207,7 +207,7 @@ sequenceDiagram
   GroqSTT->>Output: Generate SRT/VTT subtitle file
   STSAPI->>FFMPEG: Return translated audio
   FFMPEG->>Output: Mux translated audio with video
-  Output->>Output: Mux SRT with video (final subtitles)
+  Output->>Output: Mux VTT with video (final subtitles)
 
   Note over UserVideo,Output: V1 - Non-Hindi Translation Flow
 
