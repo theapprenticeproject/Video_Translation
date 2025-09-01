@@ -134,6 +134,7 @@ erDiagram
         Attach localized_vid
         Datetime processed_on
         Data status
+        HTML video_preview
         Link origin_vid_link "Video Info"
     }
 
@@ -169,7 +170,7 @@ The diagram showcases API flow which are versioned as v1 and v2 and details it a
     * Detecting Source language is the common step among both API version which begins with Bhashini language detection API. Audio Extracted using FFMPEG & the output audio file is passed onto next step.
     * Bhashini Speech to Speech (STS) API is a core pipelined translation service which takes audio file and ouputting a new Translated audio file.
     * Muxing of the translated audio is done by overwriting(using FFMPEG) the original audio thus creating a new Translated video file with translated audio track.
-    * The final step using FFMPEG is to merge the generated subtitle file with the newly created translated video file.
+    * The final step is populating the generated subtitle file with the newly created translated video file by via the HTML field `video_preview`.
 
 * **v2 - Hindi Translations :** This flow involves specialized processes for translating to Hindi for a better integrated dubbing experience and can be represented as:
     * **Path I (ElevenLabs)**:
@@ -178,14 +179,14 @@ The diagram showcases API flow which are versioned as v1 and v2 and details it a
         * This represents highly configurable, alternative service. This is intended for more requirements as it can also handle lip sync such services in addition to direct dubbing.
 
 * **Common Processes**
-    * When subtitles are needed (end of Video Processing Pipeline), FFMPEG is used to extract the audio track from the original video. This extracted audio is passed to a Speech-to-Text (STT) Groq service to generate a subtitle file (SRT/VTT).
+    * When subtitles are needed (end of Video Processing Pipeline), FFMPEG is used to extract the audio track from the original video. This extracted audio is passed to a Speech-to-Text (STT) Groq service and a subtitle file (SRT/VTT) is created.
 
-<img width="2746" height="1228" alt="image" src="https://github.com/user-attachments/assets/df6aae0e-7cb4-4061-b121-c2df131c2a9d" />
+<img width="2728" height="1192" alt="image" src="https://github.com/user-attachments/assets/03f98275-8f31-4b0b-9803-6208164dbde7" />
 
 ---
 
 ### 🔁 Sequence Diagram
-This diagram illustrates the end-to-end flow of video localization pipeline. It covers two translation paths and  how different components — video upload, audio extraction (FFmpeg), speech-to-text (Groq), translation, STS (Bhashini), text-to-speech (Elevenlabs) and final video assembly interact and flow step by step together. The goal is to provide clear view of request/response patterns across modules, making it easier to understand how the system orchestrates localization.
+This diagram illustrates the end-to-end flow of video localization pipeline. It covers two translation paths and  how different components — video upload, audio extraction (ffmpeg), speech-to-text (Groq), translation, STS (Bhashini), text-to-speech (Elevenlabs) and final video assembly interact and flow step by step together. The goal is to provide clear view of request/response patterns across modules, making it easier to understand how the system orchestrates localization.
 ```mermaid
 sequenceDiagram
   autonumber
@@ -201,20 +202,20 @@ sequenceDiagram
 
   %% V1 - Non-Hindi Translations
   UserVideo->>BhashiniAPI: Detect source language
-  UserVideo->>FFMPEG: Extract audio (mp3 or wav)
+  UserVideo->>FFMPEG: Extract audio (wav)
   FFMPEG->>STSAPI: Send audio for translation
   STSAPI->>GroqSTT: Translated audio → transcription
   GroqSTT->>Output: Generate SRT/VTT subtitle file
   STSAPI->>FFMPEG: Return translated audio
   FFMPEG->>Output: Mux translated audio with video
-  Output->>Output: Mux VTT with video (final subtitles)
+  Output->>Output: Populate VTT file with video (final subtitles)
 
   Note over UserVideo,Output: V1 - Non-Hindi Translation Flow
 
   %% V2 - Hindi Direct Translation
   UserVideo->>ElevenLabs: Send video for dubbing (Option I)
   ElevenLabs->>GroqSTT: Transcription from dubbed video
-  GroqSTT->>Output: Generate SRT/VTT subtitle file
+  GroqSTT->>Output: Generate VTT subtitle file
 
   UserVideo->>SieveData: Send video for dubbing + lip sync (Option II)
 
