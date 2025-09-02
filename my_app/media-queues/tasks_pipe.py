@@ -6,6 +6,7 @@ from my_app.api.v2.dub_labs import dubbing
 from my_app.api.v2 import dub_sieve
 from my_app.api.v1.audio_extract import audio_extraction
 from my_app.api.v1.subtitle import vtt_generate
+from my_app.api.v1.bhashini_tasks import STS_pipe
 
 '''Not importing the function in dub_sieve.py directly because import sieve tries to set up signal handler which only works 
 in main thread, thus avoiding signal error.
@@ -58,6 +59,40 @@ def language_detection(audio_filename: str, processed_docname: str, video_filena
             )   
         else:
             print("Target language is not hindi")
+            frappe.enqueue(
+                method="my_app.media-queues.tasks_pipe.sts_translation",
+                queue="long",
+                video_filename=video_filename,
+                audio_filename=audio_filename,
+                src_lang_code=src_language,
+                tar_lang_code=target_language,
+                processed_docname=processed_docname,
+                user=user
+            )
+
+def sts_translation(video_filename: str, audio_filename: str, src_lang_code: str, tar_lang_code: str, processed_docname: str, user: str):
+    processed_audio_info=STS_pipe(audio_filename, src_lang_code, tar_lang_code, processed_docname)
+    processed_doc=frappe.get_doc("Processed Video Info", processed_docname)
+    processed_doc.translated_aud=processed_audio_info["audio_filepath"]
+    processed_doc.status="Video Translation Done - sts"
+    processed_doc.save(ignore_permissions=True)
+    frappe.db.commit()
+
+    frappe.get_doc({
+        "doctype":"Notification Log",
+        "for_user":user,
+        "subject":"Translation Completed",
+        "email_content":f"Translation done in {tar_lang_code}",
+        "type":"Alert"
+    }).insert(ignore_permissions=True)
+
+    frappe.enqueue(
+        method="my_app.media-queues.tasks_pipe.get_subtitles",
+        queue="short",
+        audio_filename=processed_audio_info["audio_filename"],
+        processed_docname=processed_doc,
+        user=user
+    )
 
 # path-1
 def hindi_dubbing(video_filename: str, processed_docname: str, user: str):
@@ -72,7 +107,7 @@ def hindi_dubbing(video_filename: str, processed_docname: str, user: str):
         "doctype":"Notification Log",
         "for_user": user,
         "subject": "Translation Compeleted",
-        "email_content": f"Dubbing done in Hindi",
+        "email_content": "Dubbing done in Hindi",
         "type": "Alert"
     }).insert(ignore_permissions=True)
 
@@ -89,7 +124,7 @@ def alt_hindi_dub(video_filename: str, processed_docname: str, user: str):
         "doctype":"Notification Log",
         "for_user":user,
         "subject":"Translation Completed",
-        "email_content":f"Dubbing Done in Hindi",
+        "email_content":"Dubbing Done in Hindi",
         "type":"Alert"
     }).insert(ignore_permissions=True)
 

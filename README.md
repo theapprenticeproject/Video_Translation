@@ -179,7 +179,7 @@ The diagram showcases API flow which are versioned as v1 and v2 and details it a
         * This represents highly configurable, alternative service. This is intended for more requirements as it can also handle lip sync such services in addition to direct dubbing.
 
 * **Common Processes**
-    * When subtitles are needed (end of Video Processing Pipeline), FFMPEG is used to extract the audio track from the original video. This extracted audio is passed to a Speech-to-Text (STT) Groq service and a subtitle file (SRT/VTT) is created.
+    * When subtitles are needed (end of Video Processing Pipeline), FFMPEG is used to extract the audio track from the original video. This extracted audio is passed to a Speech-to-Text (STT) Groq service and a subtitle file (VTT) is created.
 
 <img width="2728" height="1192" alt="image" src="https://github.com/user-attachments/assets/03f98275-8f31-4b0b-9803-6208164dbde7" />
 
@@ -205,7 +205,7 @@ sequenceDiagram
   UserVideo->>FFMPEG: Extract audio (wav)
   FFMPEG->>STSAPI: Send audio for translation
   STSAPI->>GroqSTT: Translated audio → transcription
-  GroqSTT->>Output: Generate SRT/VTT subtitle file
+  GroqSTT->>Output: Generate VTT subtitle file
   STSAPI->>FFMPEG: Return translated audio
   FFMPEG->>Output: Mux translated audio with video
   Output->>Output: Populate VTT file with video (final subtitles)

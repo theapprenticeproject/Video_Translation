@@ -1,4 +1,4 @@
-import frappe, base64, requests
+import frappe, base64, requests, subprocess, os
 
 def lang_detection(audio_filename: str, processed_docname: str):
     processed_doc=frappe.get_doc("Processed Video Info", processed_docname)
@@ -48,7 +48,13 @@ def lang_detection(audio_filename: str, processed_docname: str):
         frappe.throw("Error with exception : ", e)
     
 # for non-hindi native languages
-def STS_pipe(audio_filename: str, lang_code: str, src_lang_code: str, processed_docname: str):
+def STS_pipe(audio_filename: str, src_lang_code: str, tar_lang_code: str, processed_docname: str):
+    languageCodes={
+        "Marathi" : "mr",
+        "Punjabi" : "pa"
+    }
+    tar_lang_code=languageCodes[tar_lang_code]
+
     processed_doc=frappe.get_doc("Processed Video Info", processed_docname)
     input_path=frappe.get_site_path("public", "files", "original" ,audio_filename)
     with open(input_path, "rb") as f:
@@ -62,7 +68,7 @@ def STS_pipe(audio_filename: str, lang_code: str, src_lang_code: str, processed_
                 "taskType": "asr",
                 "config": {
                     "language": {
-                        "sourceLanguage": lang_code
+                        "sourceLanguage": src_lang_code
                     },
                     "serviceId": "ai4bharat/whisper-medium-en--gpu--t4",
                     "audioFormat": "flac",
@@ -73,8 +79,8 @@ def STS_pipe(audio_filename: str, lang_code: str, src_lang_code: str, processed_
                 "taskType": "translation",
                 "config": {
                     "language": {
-                        "sourceLanguage": lang_code,
-                        "targetLanguage": src_lang_code
+                        "sourceLanguage": src_lang_code,
+                        "targetLanguage": tar_lang_code
                     },
                     "serviceId": "ai4bharat/indictrans-v2-all-gpu--t4"
                 }
@@ -83,7 +89,7 @@ def STS_pipe(audio_filename: str, lang_code: str, src_lang_code: str, processed_
                 "taskType": "tts",
                 "config": {
                     "language": {
-                        "sourceLanguage": src_lang_code
+                        "sourceLanguage": tar_lang_code
                     },
                     "serviceId": "Bhashini/IITM/TTS",
                     "gender": "male",
@@ -111,10 +117,21 @@ def STS_pipe(audio_filename: str, lang_code: str, src_lang_code: str, processed_
         with open(output_path, "wb") as fo:
             decoded_aud=base64.b64decode(b64_output)
             fo.write(decoded_aud)
+        
+        if os.path.exists(output_path):
+            print("YOU CAN TRY RUNNING SUBPROCESS CALL")
+        #     subprocess.run("ffmpeg","-i", input_videopath, "-i", output_path, "-c:v", "copy", "-c:a", "aac", "-map", "0:v:0", "-map", "1:a:0", output_videopath)
+        else:
+            print("NO MAYBE CANT RUN SUBPROCESS")
 
-        processed_doc.status=f"Translated speech generated from {lang_code} to {src_lang_code}"
+        processed_doc.status=f"Translated speech generated from {src_lang_code} to {tar_lang_code}"
         processed_doc.save(ignore_permissions=True)
         frappe.db.commit()
+
+        return {
+            "audio_filename": f"sts_{audio_filename}",
+            "audio_filepath": f"files/processed/sts_{audio_filename}"
+        }
 
     except requests.RequestException as err:
         processed_doc.status="Speech to Speech Translation failed -  Requests"

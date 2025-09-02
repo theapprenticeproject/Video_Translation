@@ -25,7 +25,7 @@ def dubbing_alt(video_filename: str, processed_docname: str):
         dubbing=sieve.function.get("sieve/dubbing") 
 
         target_language="hindi"
-        output=dubbing.push(source_video, target_language, enable_lipsyncing=True)
+        output=dubbing.push(source_video, target_language, enable_lipsyncing=False)
 
         print("Printing while a sieve dubbing job is running")
         for output_file in output.result():
