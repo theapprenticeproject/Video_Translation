@@ -1,60 +1,116 @@
-<!-- Testing API calls through Client side -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video API Test</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f9fafb;
+      color: #111827;
+      padding: 2rem;
+      max-width: 800px;
+      margin: auto;
+    }
+    h2 {
+      color: #1f2937;
+      margin-bottom: 1rem;
+    }
+    label {
+      font-weight: 600;
+      margin-top: 1rem;
+      display: block;
+    }
+    select, textarea {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.25rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.4rem;
+      font-size: 0.9rem;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 0.6rem 1rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+    pre {
+      background: #111827;
+      color: #f9fafb;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-top: 1.5rem;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .info {
+      font-size: 0.9rem;
+      color: #4b5563;
+      margin-bottom: 1rem;
+    }
+  </style>
 </head>
 <body>
 
 <h2>Video API Test Page</h2>
-<button onclick="callAPI()">Run API Call</button>
-<pre id="response"></pre>
+<p class="info">Select an endpoint, edit the payload if needed, and click <b>Run Test</b>. Update the <code>Authorization</code> header in the code if your endpoint requires credentials.</p>
+
+<label for="endpoint">Choose Endpoint:</label>
+<select id="endpoint">
+  <option value="ping">Ping (Health Check)</option>
+  <option value="subtitle">Generate Subtitles</option>
+</select>
+
+<label for="payload">Request Payload (JSON):</label>
+<textarea id="payload" rows="6">{
+  "audio_filename": "david_en_aud.wav",
+  "langCode": "en"
+}</textarea>
+
+<button onclick="callAPI()">Run Test</button>
+
+<pre id="response">Waiting for request...</pre>
 
 <script>
+  function showResponse(data) {
+    document.getElementById("response").textContent = JSON.stringify(data, null, 2);
+  }
+
   function callAPI() {
-    fetch("/api/method/my_app.api.v1.subtitle.vtt_generate", {
-      method: "POST",
-      credentials: "omit",
-      headers: { // replace the below tokens with your <api_key>:<api_secret>
-        // "Authorization": "token 6fdda780ea39fac:ba7b0617cb9b484",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        "audio_filename": "david_en_aud.wav",
-        "langCode":"en"
-      })
-    })
-    .then(res => res.json())
-    .then(data => {
-      console.log(data);
-      document.getElementById("response").textContent = JSON.stringify(data, null, 2);
-    })
-    .catch(err => {
-      console.error("API error", err);
-      document.getElementById("response").textContent = "Error: " + err.message;
-    });
+    const endpoint = document.getElementById("endpoint").value;
+    let url, options;
+
+    if (endpoint === "ping") {
+      url = "/api/method/my_app.api.test-check.ping";
+      options = { method: "GET", credentials: "omit", headers:{ "Authorization": "token 6fdda780ea39fac:ba7b0617cb9b48"} };
+    } 
+    else if (endpoint === "subtitle") {
+      url = "/api/method/my_app.api.v1.subtitle.vtt_generate";
+      options = {
+        method: "POST",
+        headers: {
+          "Authorization": "token <api_key>:<api_secret>", // replace with credentials
+          "Content-Type": "application/json"
+        },
+        body: document.getElementById("payload").value
+      };
+    }
+
+    fetch(url, options)
+      .then(res => res.json())
+      .then(showResponse)
+      .catch(err => showResponse({error: err.message}));
   }
 </script>
-<style>
-/* video::cue {
-  background: transparent;
-  color: white;
-  font-size: 16px;
-  text-shadow: 1px 1px 2px black;
-  line-height: 1.4;
-
-  position: absolute;
-  bottom: 2%;
-} */
-</style>
-<!-- <video controls width="640" height="360">
-  <source src="/files/david-dub-hindi.mp4" type="video/mp4">
-  <track src="/files/subtitles_timestamps.vtt" kind="subtitles" default>
-  Your browser does not support the video tag.
-</video> -->
 
 </body>
 </html>
