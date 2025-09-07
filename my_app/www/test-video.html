@@ -1,3 +1,4 @@
+<!-- API Checking from Client side UI -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -62,18 +63,22 @@
 <body>
 
 <h2>Video API Test Page</h2>
-<p class="info">Select an endpoint, edit the payload if needed, and click <b>Run Test</b>. Update the <code>Authorization</code> header in the code if your endpoint requires credentials.</p>
+<p class="info">Select an endpoint, add headers or payload if required, and click <b>Run Test</b>.  
 
 <label for="endpoint">Choose Endpoint:</label>
 <select id="endpoint">
-  <option value="ping">Ping (Health Check)</option>
-  <option value="subtitle">Generate Subtitles</option>
+  <option value="ping">Ping (Test Check)</option>
+  <!-- More endpoints can be added here later -->
 </select>
+
+<label for="header">Headers (JSON):</label>
+<textarea id="header" rows="3">{
+  "Authorization": "token <api_key>:<api_secret>"
+}</textarea>
 
 <label for="payload">Request Payload (JSON):</label>
 <textarea id="payload" rows="6">{
-  "audio_filename": "david_en_aud.wav",
-  "langCode": "en"
+  "sample_key": "sample_value"
 }</textarea>
 
 <button onclick="callAPI()">Run Test</button>
@@ -90,20 +95,16 @@
     let url, options;
 
     if (endpoint === "ping") {
+      // Ping example: omitting credentials will fallback to session-based auth if logged into Frappe
+      // Adding headers allows explicit token/basic auth (replace <api_key>:<api_secret>)
       url = "/api/method/my_app.api.test-check.ping";
-      options = { method: "GET", credentials: "omit", headers:{ "Authorization": "token 6fdda780ea39fac:ba7b0617cb9b48"} };
-    } 
-    else if (endpoint === "subtitle") {
-      url = "/api/method/my_app.api.v1.subtitle.vtt_generate";
       options = {
-        method: "POST",
-        headers: {
-          "Authorization": "token <api_key>:<api_secret>", // replace with credentials
-          "Content-Type": "application/json"
-        },
-        body: document.getElementById("payload").value
+        method: "GET",
+        headers: JSON.parse(document.getElementById("header").value)
       };
     }
+
+    // Additional endpoints can be added here with else-if blocks
 
     fetch(url, options)
       .then(res => res.json())
