@@ -97,10 +97,12 @@
     if (endpoint === "ping") {
       // Ping example: omitting credentials will fallback to session-based auth if logged into Frappe
       // Adding headers allows explicit token/basic auth (replace <api_key>:<api_secret>)
+      // If both token and session are sent, and the token is invalid, Frappe may invalidate the session
       url = "/api/method/my_app.api.test-check.ping";
       options = {
         method: "GET",
-        headers: JSON.parse(document.getElementById("header").value)
+        headers: JSON.parse(document.getElementById("header").value),
+        credentials: "omit"
       };
     }
 

@@ -21,7 +21,7 @@
 * Uses **uv** for fast and reliable package & dependency management.
 
 ## 📑 Documentation
-Full setup guides, architecture, API Flows, etc., are available in the [Gitbook Documentation ↗]()
+Full setup guides, architecture, API Flows, etc., are available in the **[Gitbook Documentation ↗](https://theapprenticeproject.gitbook.io/ai-video-localization/RbOX32eTbHDcOMXmXgoF/)**
 
 ## 📦 Installation
 ### Bench Installation
@@ -41,10 +41,14 @@ For quick sanity checks, you can check the sample file at `www/test-video.html`.
 * Update the **Authorization** header if requires credentials (functions are whitelisted).
 * Select the endpoint in dropdown and click **Run Test**(e.g., `ping`, etc).
 * The JSON response will be displayed on the page. You can add more endpoints in the `www/test-video.html` for testing.
+   <img width="700" alt="image" src="https://github.com/user-attachments/assets/7ca935a8-a284-478d-b317-bcdea54a5704" />
+   > Subtitle generate API testing using token-based auth.
+  
+---
 
 ## 🤝 Contributing
-For all future contributions.
-* Follow the [Setup Guide ↗]() in the docs to set up locally.
+For all future contributions:
+* Follow the [Setup Guide ↗](https://theapprenticeproject.gitbook.io/ai-video-localization/RbOX32eTbHDcOMXmXgoF/getting-started) in the docs to set up locally.
 * This project follows [Conventional Commits ↗](https://www.conventionalcommits.org/) (adopted from mid-development onwards).
 * Check **Issues** for past progress and future tracking.
 * #### Code Style (Optional)
