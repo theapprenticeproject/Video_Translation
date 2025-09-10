@@ -5,7 +5,7 @@ client=Groq(
     api_key=frappe.conf.groq_api_key
 )
 
-def vtt_generate(audio_filename: str, processed_docname: str):
+def vtt_generate(audio_filename: str, lang_code: str, processed_docname: str):
     processed_doc=frappe.get_doc("Processed Video Info", processed_docname)
     audio_file_path=frappe.get_site_path("public", "files", "processed", audio_filename)
     # formatting time in HH:MM:SS.mmm ; 'm' denoting milliseconds
@@ -51,7 +51,7 @@ def vtt_generate(audio_filename: str, processed_docname: str):
             file = file,
             model = "whisper-large-v3-turbo",
             response_format = "verbose_json",
-            # language = langCode, ( optional )
+            language = lang_code, # optional
             timestamp_granularities = ["segment"] 
         )
         generate_vtt_file(transcription.segments, audio_filename)

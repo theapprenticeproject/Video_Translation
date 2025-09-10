@@ -48,7 +48,7 @@ def lang_detection(audio_filename: str, processed_docname: str):
         frappe.throw("Error with exception : ", e)
     
 # for non-hindi native languages
-def STS_pipe(audio_filename: str, src_lang_code: str, tar_lang_code: str, processed_docname: str):
+def STS_pipe(video_filename: str, audio_filename: str, src_lang_code: str, tar_lang_code: str, processed_docname: str):
     languageCodes={
         "Marathi" : "mr",
         "Punjabi" : "pa"
@@ -62,6 +62,8 @@ def STS_pipe(audio_filename: str, src_lang_code: str, tar_lang_code: str, proces
     b64_aud=base64.b64encode(b).decode("utf-8")
 
     output_path=frappe.get_site_path("public", "files", "processed", f"sts_{audio_filename}")
+    input_videopath=frappe.get_site_path("public", "files", "original", video_filename)
+    output_videopath=frappe.get_site_path("public", "files", "processed", f"sts_{video_filename}")
     payload={
         "pipelineTasks": [
             {
@@ -91,9 +93,9 @@ def STS_pipe(audio_filename: str, src_lang_code: str, tar_lang_code: str, proces
                     "language": {
                         "sourceLanguage": tar_lang_code
                     },
-                    "serviceId": "Bhashini/IITM/TTS",
+                    "serviceId": "ai4bharat/indic-tts-coqui-indo_aryan-gpu--t4",
                     "gender": "male",
-                    "samplingRate": 8000
+                    "samplingRate": 16000
                 }
             }
         ],
@@ -120,7 +122,10 @@ def STS_pipe(audio_filename: str, src_lang_code: str, tar_lang_code: str, proces
         
         if os.path.exists(output_path):
             print("YOU CAN TRY RUNNING SUBPROCESS CALL")
-        #     subprocess.run("ffmpeg","-i", input_videopath, "-i", output_path, "-c:v", "copy", "-c:a", "aac", "-map", "0:v:0", "-map", "1:a:0", output_videopath)
+            subprocess.run(["ffmpeg","-i", input_videopath, "-i", output_path, "-c:v", "copy", "-c:a", "aac", "-map", "0:v:0", "-map", "1:a:0", output_videopath])
+            processed_doc.localized_vid=f"files/processed/sts_{video_filename}"
+            processed_doc.save(ignore_permission=True)
+            frappe.db.commit()
         else:
             print("NO MAYBE CANT RUN SUBPROCESS")
 
@@ -130,7 +135,8 @@ def STS_pipe(audio_filename: str, src_lang_code: str, tar_lang_code: str, proces
 
         return {
             "audio_filename": f"sts_{audio_filename}",
-            "audio_filepath": f"files/processed/sts_{audio_filename}"
+            "audio_filepath": f"files/processed/sts_{audio_filename}",
+            "tar_lang_code": tar_lang_code
         }
 
     except requests.RequestException as err:
@@ -143,4 +149,4 @@ def STS_pipe(audio_filename: str, src_lang_code: str, tar_lang_code: str, proces
         processed_doc.status="STS Translation failed"
         processed_doc.save(ignore_permissions=True)
         frappe.db.commit()
-        frappe.throw("Exception occured during STS :", e)
+        frappe.throw(f"Exception occured during STS: {e}")

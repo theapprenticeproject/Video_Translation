@@ -71,13 +71,14 @@ def language_detection(audio_filename: str, processed_docname: str, video_filena
             )
 
 def sts_translation(video_filename: str, audio_filename: str, src_lang_code: str, tar_lang_code: str, processed_docname: str, user: str):
-    processed_audio_info=STS_pipe(audio_filename, src_lang_code, tar_lang_code, processed_docname)
+    processed_audio_info=STS_pipe(video_filename, audio_filename, src_lang_code, tar_lang_code, processed_docname)
     processed_doc=frappe.get_doc("Processed Video Info", processed_docname)
     processed_doc.translated_aud=processed_audio_info["audio_filepath"]
     processed_doc.status="Video Translation Done - sts"
     processed_doc.save(ignore_permissions=True)
     frappe.db.commit()
 
+    print("after sts trans")
     frappe.get_doc({
         "doctype":"Notification Log",
         "for_user":user,
@@ -86,10 +87,12 @@ def sts_translation(video_filename: str, audio_filename: str, src_lang_code: str
         "type":"Alert"
     }).insert(ignore_permissions=True)
 
+    print("before queing subtitles")
     frappe.enqueue(
         method="my_app.media-queues.tasks_pipe.get_subtitles",
         queue="short",
         audio_filename=processed_audio_info["audio_filename"],
+        lang_code=processed_audio_info["tar_lang_code"],
         processed_docname=processed_doc,
         user=user
     )
@@ -152,8 +155,8 @@ def extract_audio(videofile: str, processed_docname: str, user: str):
         user=user
     )
 
-def get_subtitles(audio_filename: str, processed_docname: str, user: str):
-    vtt_generate(audio_filename, processed_docname)
+def get_subtitles(audio_filename: str, lang_code: str, processed_docname: str, user: str):
+    vtt_generate(audio_filename, lang_code, processed_docname)
 
     frappe.get_doc({
         "doctype":"Notification Log",
