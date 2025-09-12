@@ -16,10 +16,8 @@ def file_retitling(original_file_url: str, folder_suffix: str, name: str) -> dic
     """
 
     original_filename = original_file_url.replace("/files/", "")
-    print("original_filename:", original_filename)
 
     original_path = frappe.get_site_path("public", "files", original_filename)
-    print("original_path:", original_path)
 
     if not os.path.exists(original_path):
         frappe.throw(f"Uploaded file {original_file_url} not found at {original_path}")
@@ -33,7 +31,6 @@ def file_retitling(original_file_url: str, folder_suffix: str, name: str) -> dic
 
     # Construct full path for renamed file
     new_path = os.path.join(dest_folder, new_filename)
-    print("new path before moving:", new_path)
 
     shutil.move(original_path, new_path)
 

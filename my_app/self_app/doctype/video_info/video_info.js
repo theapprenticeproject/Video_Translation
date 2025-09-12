@@ -6,8 +6,6 @@ frappe.ui.form.on("Video Info", {
     onload: (frm) => {
         // Listen for video file renaming completion
         frappe.realtime.on("video_file_structured", (data) => {
-            console.log("Received realtime event:", data);
-
             if (frm.doc.original_vid !== data.videofile_url) {
                 frm.set_value("original_vid", data.videofile_url).then(() => {
                     frm.refresh_field("original_vid");
@@ -22,13 +20,11 @@ frappe.ui.form.on("Video Info", {
 
         // Listen for audio extraction completion
         frappe.realtime.on("audio_extraction_completed", (data) => {
-            console.log("Original audio extracted before setting value is:", data.audiofile_url);
 
             frm.set_value("original_audio_extracted", data.audiofile_url);
             frm.save();
             frappe.show_alert({ message: __("Audio extracted"), indicator: "green" }, 3);
             setTimeout(() => { }, 1500);
-            console.log("before frm.call for trigger pipeline")
             frm.call({
                 method: "my_app.media-queues.tasks_pipe.trigger_pipeline",
                 args: {
@@ -37,7 +33,6 @@ frappe.ui.form.on("Video Info", {
                     video_filename: data.video_filename
                 },
                 callback: () => {
-                    console.log("callback after sending request to trigger_pipeline")
                     frappe.show_alert({ message: __("Translation Pipeline has started."), indicator: "yellow" })
                 }
             })
@@ -45,8 +40,6 @@ frappe.ui.form.on("Video Info", {
     },
 
     refresh: (frm) => {
-        console.log("After saving working?");
-
         if (frm.doc.original_vid && !frm.doc.original_audio_extracted) {
             frm.add_custom_button("Start Process", () => {
                 frm.clear_custom_buttons();

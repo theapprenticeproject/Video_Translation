@@ -33,4 +33,5 @@ def dubbing_alt(video_filename: str, processed_docname: str):
             return f"/files/processed/{output_filename}"
     except Exception as e:
         print("Error - exception occured : ", e)
+        # frappe.throw(f"Error exception occured during Sieve Job {e}")
         

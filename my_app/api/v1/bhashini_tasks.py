@@ -3,7 +3,6 @@ import frappe, base64, requests, subprocess, os
 def lang_detection(audio_filename: str, processed_docname: str):
     processed_doc=frappe.get_doc("Processed Video Info", processed_docname)
     input_path=frappe.get_site_path("public", "files", "original", audio_filename)
-    print("input path for lang detection: ", input_path)
     with open(input_path, "rb") as aud_file:
         bin_aud=aud_file.read()
     aud_b64_data=base64.b64encode(bin_aud).decode("utf-8")
@@ -27,7 +26,6 @@ def lang_detection(audio_filename: str, processed_docname: str):
         
         response=requests.post("https://dhruva-api.bhashini.gov.in/services/inference/audiolangdetection", json=body, headers=headers)
         detected_lang=response.json()["output"][0]["langPrediction"][0]["langCode"]
-        print("detected language is : ",detected_lang)
         processed_doc.status=f"Language Detected: {detected_lang}, Dubbing Pending"
         processed_doc.save(ignore_permissions=True)
         frappe.db.commit()
@@ -121,13 +119,12 @@ def STS_pipe(video_filename: str, audio_filename: str, src_lang_code: str, tar_l
             fo.write(decoded_aud)
         
         if os.path.exists(output_path):
-            print("YOU CAN TRY RUNNING SUBPROCESS CALL")
             subprocess.run(["ffmpeg","-i", input_videopath, "-i", output_path, "-c:v", "copy", "-c:a", "aac", "-map", "0:v:0", "-map", "1:a:0", output_videopath])
             processed_doc.localized_vid=f"files/processed/sts_{video_filename}"
             processed_doc.save(ignore_permission=True)
             frappe.db.commit()
         else:
-            print("NO MAYBE CANT RUN SUBPROCESS")
+            print("No output path found - Cant run SUBPROCESS call")
 
         processed_doc.status=f"Translated speech generated from {src_lang_code} to {tar_lang_code}"
         processed_doc.save(ignore_permissions=True)

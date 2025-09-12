@@ -14,15 +14,12 @@ In frappe, imports can happen inside worker threads thus function calling inside
 '''
 @frappe.whitelist()
 def trigger_pipeline(video_info_docname: str, audio_filename: str, video_filename:str):
-    print("before new processed doc created")
     processed_doc=frappe.new_doc("Processed Video Info")
     processed_doc.origin_vid_link=video_info_docname
     processed_doc.status="Pending"
     processed_doc.processed_on=frappe.utils.now()
     processed_doc.insert(ignore_permissions=True)
     frappe.db.commit()
-    print("before lang detection queue")
-    print(frappe.session.user)
     frappe.enqueue(
         method="my_app.media-queues.tasks_pipe.language_detection",
         queue="default",
@@ -33,7 +30,6 @@ def trigger_pipeline(video_info_docname: str, audio_filename: str, video_filenam
     )   
 
 def language_detection(audio_filename: str, processed_docname: str, video_filename: str, user: str):
-    print("before lang detection function call ")
     src_language=lang_detection(audio_filename, processed_docname)
     frappe.get_doc({
         "doctype":"Notification Log",
@@ -42,13 +38,10 @@ def language_detection(audio_filename: str, processed_docname: str, video_filena
         "email_content": f"Source language Detected: {src_language}",
         "type": "Alert"
     }).insert(ignore_permissions=True)
-    print("source language after lang detection is : ", src_language)
     docname=frappe.get_value("Video Info", {"original_vid":["like", f"%{video_filename}%"]})
-    print("docname from video info: ", docname)
     if docname:
         original_doc=frappe.get_doc("Video Info", docname)
         target_language=original_doc.target_lang
-        print("Video Info target language selected : ",target_language)
         if target_language=="Hindi":
             frappe.enqueue(
                 method="my_app.media-queues.tasks_pipe.alt_hindi_dub",
@@ -57,8 +50,7 @@ def language_detection(audio_filename: str, processed_docname: str, video_filena
                 processed_docname=processed_docname,
                 user=user
             )   
-        else:
-            print("Target language is not hindi")
+        else: # bhashini API services for non-hindi translations
             frappe.enqueue(
                 method="my_app.media-queues.tasks_pipe.sts_translation",
                 queue="long",
@@ -78,7 +70,6 @@ def sts_translation(video_filename: str, audio_filename: str, src_lang_code: str
     processed_doc.save(ignore_permissions=True)
     frappe.db.commit()
 
-    print("after sts trans")
     frappe.get_doc({
         "doctype":"Notification Log",
         "for_user":user,
@@ -87,7 +78,6 @@ def sts_translation(video_filename: str, audio_filename: str, src_lang_code: str
         "type":"Alert"
     }).insert(ignore_permissions=True)
 
-    print("before queing subtitles")
     frappe.enqueue(
         method="my_app.media-queues.tasks_pipe.get_subtitles",
         queue="short",

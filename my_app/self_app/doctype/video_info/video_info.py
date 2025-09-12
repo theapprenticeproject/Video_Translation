@@ -12,23 +12,17 @@ class VideoInfo(Document):
     def on_update(self):
         if self.original_vid and not self.original_audio_extracted and "original/" not in self.original_vid:
             try:
-                print("self.original_vid:", self.original_vid)
                 num_name = self.name.replace(self.title + "-", "")
-                print("Extracted number name:", num_name)
 
                 file_info = file_retitling(self.original_vid, "original", num_name)  # passing the record's number
 
                 self.db_set("original_vid", file_info["new_file_url_doc"], commit=True)
-                print("self.original_vid after db_set:", self.original_vid)
-                print("file_info:", file_info)
 
                 frappe.publish_realtime(
                     event="video_file_structured",
                     message={
                         "videofile_url": file_info["new_file_url_doc"],
                         "video_info_docname":self.name,
-                        # "videofile_base": file_info["new_basename"],
-                        # "folder_suffix": file_info["folder_suffix"]
                     }
                 )
 
