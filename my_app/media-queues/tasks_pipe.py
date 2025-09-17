@@ -83,7 +83,7 @@ def sts_translation(video_filename: str, audio_filename: str, src_lang_code: str
         queue="short",
         audio_filename=processed_audio_info["audio_filename"],
         lang_code=processed_audio_info["tar_lang_code"],
-        processed_docname=processed_doc,
+        processed_docname=processed_docname,
         user=user
     )
 
@@ -103,6 +103,14 @@ def hindi_dubbing(video_filename: str, processed_docname: str, user: str):
         "email_content": "Dubbing done in Hindi",
         "type": "Alert"
     }).insert(ignore_permissions=True)
+
+    frappe.enqueue(
+        method="my_app.media-queues.tasks_pipe.extract_audio",
+        queue="short",
+        videofile=processed_videofile_url, 
+        processed_docname=processed_docname,
+        user=user
+    )
 
 # path-2 
 def alt_hindi_dub(video_filename: str, processed_docname: str, user: str):
@@ -133,21 +141,21 @@ def extract_audio(videofile: str, processed_docname: str, user: str):
     extraction_info=audio_extraction(videofile)
     processed_doc=frappe.get_doc("Processed Video Info", processed_docname)
     processed_doc.status="Audio Extracted from Dubbed Vid"
-    processed_doc.translated_aud=extraction_info.audiofile_url
+    processed_doc.translated_aud=extraction_info["audiofile_url"]
     processed_doc.save(ignore_permissions=True)
     frappe.db.commit()
 
     frappe.enqueue(
         method="my_app.media-queues.tasks_pipe.get_subtitles",
         queue="short",
-        audio_filename=extraction_info.audio_filename,
+        audio_filename=extraction_info["audio_filename"],
+        lang_code="hi",
         processed_docname=processed_docname,
         user=user
     )
 
 def get_subtitles(audio_filename: str, lang_code: str, processed_docname: str, user: str):
     vtt_generate(audio_filename, lang_code, processed_docname)
-
     frappe.get_doc({
         "doctype":"Notification Log",
         "for_user":user,
@@ -162,4 +170,4 @@ def get_subtitles(audio_filename: str, lang_code: str, processed_docname: str, u
         "subject":"Localization Process Completed",
         "email_content":f"Localization Successful",
         "type":"Alert"
-    })
+    }).insert(ignore_permissions=True)
