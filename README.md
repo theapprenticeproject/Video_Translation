@@ -32,6 +32,7 @@ cd $PATH_TO_YOUR_BENCH
 bench get-app git@github.com:theapprenticeproject/Video_Translation.git --branch main
 bench install-app my_app
 ```
+**Note: Manually create the  `/original` & `/processed` folders under site's public directory (`sites/[your_site_name]/public/files/`).** 
 
 ## 🧪 Testing APIs Locally
 For quick sanity checks, you can check the sample file at `www/test-video.html`. It is a simple UI for testing APIs directly in the browser.
