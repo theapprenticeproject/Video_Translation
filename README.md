@@ -53,7 +53,7 @@ For all future contributions:
 * This project follows [Conventional Commits ↗](https://www.conventionalcommits.org/) (adopted from mid-development onwards).
 * Check **Issues** for past progress and future tracking.
 * #### Code Style (Optional)
-    * We could use *ruff* (python) and *prettier* (JS/JSON) for consistent formatting.
+    * We use ***ruff*** (python) and *prettier* (JS/JSON) for consistent formatting.
     * `pre-commit` is for code formatting and linting. An optional [install pre-commit](https://pre-commit.com/#installation) config is included in repo if required automatic checks, enable it:
 
         ```bash
