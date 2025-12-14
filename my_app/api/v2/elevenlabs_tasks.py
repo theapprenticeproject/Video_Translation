@@ -8,6 +8,7 @@ from my_app.api.v1.bhashini_tasks import text_translation
 # from my_app.api.v1.subtitle import groq_client
 from my_app.api.v2.dub_labs import labs_client
 
+frappe.utils.logger.set_log_level("DEBUG")
 logger = frappe.logger("labs")
 
 """Speech to text supports both video & audio upload for transcription"""
@@ -22,6 +23,7 @@ def speech_to_text(tar_lang_code, vid_filename: str, processed_docname: str):
 			language_code="hi",
 		)
 	logger.info(f"Received response from STT: {response}")
+	print("receieved response from STT: ", response)
 	transcript = response.text
 	translated_text = text_translation(transcript, tar_lang_code, processed_docname)
 	logger.info(f"Received translated text from bhashini: {translated_text}")
@@ -47,16 +49,17 @@ def speech_to_text(tar_lang_code, vid_filename: str, processed_docname: str):
 def text_to_speech(text: str, vid_filename: str, processed_docname: str):
 	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
 	output_audio_filename = f"labs_sts_{vid_filename}"
-	output_audiopath = frappe.get_site_path("public", "files", "processed", output_audio_filename)
+	output_audiopath = frappe.get_site_path("public", "files", "processed", output_audio_filename.replace("mp4", "mp3"))
 	output_videopath = frappe.get_site_path("public", "files", "processed", f"labs_sts_{vid_filename}")
 	input_videopath = frappe.get_site_path("public", "files", "original", vid_filename)
+	print("Calling TTS model for voice output")
 	logger.info("Calling TTS model for voice output")
-	response = labs_client.text_to_speech.with_raw_response.convert(
+	response = labs_client.text_to_speech.convert(
 		text=text,
 		voice_id="VT26nWaqgBmXtH6KAeQ3",  # Vaidehi
 		model_id="eleven_v3",
 	)
-	print(response)
+	logger.info(f"Output audipath: {output_audiopath}")
 	logger.info(f"Response received from TTS model: {response}")
 	with open(output_audiopath, "wb") as f:
 		for chunk in response:
@@ -64,6 +67,7 @@ def text_to_speech(text: str, vid_filename: str, processed_docname: str):
 				f.write(chunk)
 	if os.path.exists(output_audiopath):
 		logger.info("Running muxing command of output audio to input video")
+		print("before subprocess run")
 		subprocess.run(
 			[
 				"ffmpeg",

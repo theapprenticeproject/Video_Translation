@@ -3,6 +3,7 @@ import time
 import frappe
 from elevenlabs import ElevenLabs
 
+frappe.utils.logger.set_log_level("DEBUG")
 logger = frappe.logger("dubbing")
 labs_client = ElevenLabs(api_key=frappe.conf.elevenlabs_api_key)
 

@@ -173,8 +173,9 @@ def text_translation(text: str, target_langcode: str, processed_docname: str):
 		response = requests.post(
 			"https://dhruva-api.bhashini.gov.in/services/inference/pipeline", json=body, headers=headers
 		)
-
-		translated_text = response.json["pipelineResponse"][0]["output"][0]["target"]
+		print("response from bhashini translation: ",response)
+		print(response.json())
+		translated_text = response.json()["pipelineResponse"][0]["output"][0]["target"]
 		processed_doc.status = f"Text translated into {target_langcode}"
 		processed_doc.save(ignore_permissions=True)
 		frappe.db.commit()
