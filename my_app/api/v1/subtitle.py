@@ -25,7 +25,7 @@ def vtt_generate(audio_filename: str, lang_code: str, processed_docname: str):
 
 	def generate_vtt_file(segments, audio_filename):
 		timestamps_path = frappe.get_site_path(
-			"public", "files", "processed", f"{audio_filename.replace('wav', 'vtt')}"
+			"public", "files", "processed", f"{os.path.splitext(audio_filename)[0]}.vtt"
 		)
 		with open(timestamps_path, "w") as f:
 			text = "WEBVTT\n\n"

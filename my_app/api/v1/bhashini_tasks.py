@@ -5,6 +5,9 @@ import subprocess
 import frappe
 import requests
 
+frappe.utils.logger.set_log_level("DEBUG")
+logger = frappe.logger("bhashini")
+
 
 def lang_detection(audio_filename: str, processed_docname: str):
 	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
@@ -170,20 +173,30 @@ def text_translation(text: str, target_langcode: str, processed_docname: str):
 			],
 			"inputData": {"input": [{"source": text}]},
 		}
+		logger.info("Sending translation api request")
 		response = requests.post(
 			"https://dhruva-api.bhashini.gov.in/services/inference/pipeline", json=body, headers=headers
 		)
-		print("response from bhashini translation: ",response)
-		print(response.json())
+		logger.info(response)
+		logger.info("Received translation response : ", response.json())
 		translated_text = response.json()["pipelineResponse"][0]["output"][0]["target"]
 		processed_doc.status = f"Text translated into {target_langcode}"
 		processed_doc.save(ignore_permissions=True)
 		frappe.db.commit()
-
 		return translated_text
+
 	except requests.RequestException as e:
+		logger.error(f"Requests exception occured during Translation : {e}")
 		processed_doc.status = "Text translation failed - Requests"
 		processed_doc.save(ignore_permissions=True)
 		frappe.db.commit()
 
 		frappe.throw(f"Error calling Translation API: {e}")
+
+	except Exception as e:
+		logger.error(f"Exception occured during translation : {e}")
+		processed_doc.status = "Text translation failed"
+		processed_doc.save(ignore_permissions=True)
+		frappe.db.commit()
+
+		frappe.throw(f"Error during translation : {e}")
