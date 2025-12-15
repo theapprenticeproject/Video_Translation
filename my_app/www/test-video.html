@@ -1,6 +1,7 @@
 <!-- API Checking from Client side UI -->
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,16 +15,20 @@
       max-width: 800px;
       margin: auto;
     }
+
     h2 {
       color: #1f2937;
       margin-bottom: 1rem;
     }
+
     label {
       font-weight: 600;
       margin-top: 1rem;
       display: block;
     }
-    select, textarea {
+
+    select,
+    textarea {
       width: 100%;
       padding: 0.5rem;
       margin-top: 0.25rem;
@@ -31,6 +36,7 @@
       border-radius: 0.4rem;
       font-size: 0.9rem;
     }
+
     button {
       background: #2563eb;
       color: white;
@@ -41,9 +47,11 @@
       margin-top: 1rem;
       font-size: 0.9rem;
     }
+
     button:hover {
       background: #1d4ed8;
     }
+
     pre {
       background: #111827;
       color: #f9fafb;
@@ -53,6 +61,7 @@
       white-space: pre-wrap;
       word-wrap: break-word;
     }
+
     .info {
       font-size: 0.9rem;
       color: #4b5563;
@@ -60,60 +69,80 @@
     }
   </style>
 </head>
+
 <body>
 
-<h2>Video API Test Page</h2>
-<p class="info">Select an endpoint, add headers or payload if required, and click <b>Run Test</b>.  
+  <h2>Video API Test Page</h2>
+  <p class="info">Select an endpoint, add headers or payload if required, and click <b>Run Test</b>.
 
-<label for="endpoint">Choose Endpoint:</label>
-<select id="endpoint">
-  <option value="ping">Ping (Test Check)</option>
-  <!-- More endpoints can be added here later -->
-</select>
+    <label for="endpoint">Choose Endpoint:</label>
+    <select id="endpoint">
+      <option value="ping">Ping (Test Check)</option>
+      <option value="text-translation">Text Translation</option>
+      <!-- More endpoints can be added here later -->
+    </select>
 
-<label for="header">Headers (JSON):</label>
-<textarea id="header" rows="3">{
+    <label for="header">Headers (JSON):</label>
+    <textarea id="header" rows="3">{
   "Authorization": "token <api_key>:<api_secret>"
 }</textarea>
 
-<label for="payload">Request Payload (JSON):</label>
-<textarea id="payload" rows="6">{
+    <label for="payload">Request Payload (JSON):</label>
+    <textarea id="payload" rows="6">{
   "sample_key": "sample_value"
 }</textarea>
 
-<button onclick="callAPI()">Run Test</button>
+    <button onclick="callAPI()">Run Test</button>
 
-<pre id="response">Waiting for request...</pre>
+  <pre id="response">Waiting for request...</pre>
 
-<script>
-  function showResponse(data) {
-    document.getElementById("response").textContent = JSON.stringify(data, null, 2);
-  }
-
-  function callAPI() {
-    const endpoint = document.getElementById("endpoint").value;
-    let url, options;
-
-    if (endpoint === "ping") {
-      // Ping example: omitting credentials will fallback to session-based auth if logged into Frappe
-      // Adding headers allows explicit token/basic auth (replace <api_key>:<api_secret>)
-      // If both token and session are sent, and the token is invalid, Frappe may invalidate the session
-      url = "/api/method/my_app.api.test-check.ping";
-      options = {
-        method: "GET",
-        headers: JSON.parse(document.getElementById("header").value),
-        credentials: "omit"
-      };
+  <script>
+    function showResponse(data) {
+      document.getElementById("response").textContent = JSON.stringify(data, null, 2);
     }
 
-    // Additional endpoints can be added here with else-if blocks
+    function callAPI() {
+      const endpoint = document.getElementById("endpoint").value;
+      let url, options, headers = {}, payload = null;
 
-    fetch(url, options)
-      .then(res => res.json())
-      .then(showResponse)
-      .catch(err => showResponse({error: err.message}));
-  }
-</script>
+      try {
+        headers = JSON.parse(document.getElementById("header").value || "{}");
+        payload = JSON.parse(document.getElementById("payload").value || "{}");
+      } catch (e) {
+        showResponse({ error: "Invalid JSON in headers or payload" });
+        return;
+      }
+
+      if (endpoint === "ping") {
+        // Ping example: omitting credentials will fallback to session-based auth if logged into Frappe
+        // Adding headers allows explicit token/basic auth (replace <api_key>:<api_secret>)
+        // If both token and session are sent, and the token is invalid, Frappe may invalidate the session
+        url = "/api/method/my_app.api.test-check.ping";
+        options = {
+          method: "GET",
+          headers,
+          credentials: "omit"
+        };
+      }
+      else if (endpoint === "text-translation") {
+        url = "/api/method/my_app.api.v1.bhashini_tasks.text_translation";
+        options = {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify(payload),
+          credentials: "omit"
+        }
+      }
+
+      // Additional endpoints can be added here with else-if blocks
+
+      fetch(url, options)
+        .then(res => res.json())
+        .then(showResponse)
+        .catch(err => showResponse({ error: err.message }));
+    }
+  </script>
 
 </body>
+
 </html>
