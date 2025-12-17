@@ -28,7 +28,7 @@ def speech_to_text(tar_lang_code, vid_filename: str, processed_docname: str):
 	logger.info(f"Received translated text from bhashini: {translated_text}")
 	# translated_text = text_translate(transcript, tar_lang_code)
 	# logger.info(f"Received translated text from groq: {translated_text}")
-	tts_response = text_to_speech(translated_text, vid_filename, processed_docname)
+	tts_response = text_to_speech(translated_text, tar_lang_code, vid_filename, processed_docname)
 	return tts_response
 
 
@@ -51,18 +51,18 @@ def speech_to_text(tar_lang_code, vid_filename: str, processed_docname: str):
 # 	return translated_text
 
 
-def text_to_speech(text: str, vid_filename: str, processed_docname: str):
+def text_to_speech(text: str, langcode: str, vid_filename: str, processed_docname: str):
 	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
 	output_audio_filename = f"labs_sts_{vid_filename}".replace("mp4", "mp3")
-	output_audiopath = frappe.get_site_path(
-		"public", "files", "processed", output_audio_filename
-	)
+	output_audiopath = frappe.get_site_path("public", "files", "processed", output_audio_filename)
 	output_videopath = frappe.get_site_path("public", "files", "processed", f"labs_sts_{vid_filename}")
 	input_videopath = frappe.get_site_path("public", "files", "original", vid_filename)
 	logger.info("Calling TTS model for voice output")
+	voices = {"mr": "VT26nWaqgBmXtH6KAeQ3", "pa": "vT0wMbLG5dssaBsksrb6"}  # Vaidehi & Noor respectively
+	lang_voice_id = voices.get("mr") if langcode == "mr" else voices.get("pa")
 	response = labs_client.text_to_speech.convert(
 		text=text,
-		voice_id="VT26nWaqgBmXtH6KAeQ3",  # Vaidehi
+		voice_id=lang_voice_id,
 		model_id="eleven_v3",
 	)
 	logger.info(f"Output audipath: {output_audiopath}")
