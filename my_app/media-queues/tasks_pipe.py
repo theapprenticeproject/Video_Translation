@@ -5,7 +5,6 @@ import frappe
 from my_app.api.v1.audio_extract import audio_extraction
 from my_app.api.v1.bhashini_tasks import STS_pipe, lang_detection
 from my_app.api.v1.subtitle import vtt_generate
-from my_app.api.v2 import dub_sieve
 from my_app.api.v2.dub_labs import dubbing
 from my_app.api.v2.elevenlabs_tasks import speech_to_text
 
@@ -162,34 +161,6 @@ def hindi_dubbing(video_filename: str, processed_docname: str, user: str):
 			"for_user": user,
 			"subject": "Translation Compeleted",
 			"email_content": "Dubbing done in Hindi",
-			"type": "Alert",
-		}
-	).insert(ignore_permissions=True)
-
-	frappe.enqueue(
-		method="my_app.media-queues.tasks_pipe.extract_audio",
-		queue="short",
-		videofile=processed_videofile_url,
-		processed_docname=processed_docname,
-		user=user,
-	)
-
-
-# path-2
-def alt_hindi_dub(video_filename: str, processed_docname: str, user: str):
-	processed_videofile_url = dub_sieve.dubbing_alt(video_filename, processed_docname)
-	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
-	processed_doc.status = "Dubbing Completed"
-	processed_doc.localized_vid = processed_videofile_url
-	processed_doc.save(ignore_permissions=True)
-	frappe.db.commit()
-
-	frappe.get_doc(
-		{
-			"doctype": "Notification Log",
-			"for_user": user,
-			"subject": "Translation Completed",
-			"email_content": "Dubbing Done in Hindi",
 			"type": "Alert",
 		}
 	).insert(ignore_permissions=True)
