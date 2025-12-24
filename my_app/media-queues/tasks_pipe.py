@@ -67,8 +67,8 @@ def language_detection(audio_filename: str, processed_docname: str, video_filena
 			# 	user=user,
 			# )
 			# elevenlab service for non-hindi
-			languages={"Marathi":"mr", "Punjabi":"pa"}
-			tar_langcode=languages.get(target_language.strip())
+			languages = {"Marathi": "mr", "Punjabi": "pa"}
+			tar_langcode = languages.get(target_language.strip())
 			frappe.enqueue(
 				method="my_app.media-queues.tasks_pipe.labs_sts_translation",
 				queue="long",
@@ -76,7 +76,7 @@ def language_detection(audio_filename: str, processed_docname: str, video_filena
 				tar_lang_code=tar_langcode,
 				processed_docname=processed_docname,
 				user=user,
-            )
+			)
 
 
 def sts_translation(
@@ -116,12 +116,10 @@ def sts_translation(
 	)
 
 
-def labs_sts_translation(
-	video_filename: str, tar_lang_code: str, processed_docname: str, user: str
-):
+def labs_sts_translation(video_filename: str, tar_lang_code: str, processed_docname: str, user: str):
 	processed_audio_info = speech_to_text(tar_lang_code, video_filename, processed_docname)
 	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
-	processed_doc.translated_aud=processed_audio_info["audio_filepath"]
+	processed_doc.translated_aud = processed_audio_info["audio_filepath"]
 	processed_doc.status = "Video Translation done - ElevenLabs STS"
 	processed_doc.save(ignore_permissions=True)
 	frappe.db.commit()
@@ -140,7 +138,7 @@ def labs_sts_translation(
 		method="my_app.media-queues.tasks_pipe.get_subtitles",
 		queue="short",
 		audio_filename=processed_audio_info["audio_filename"],
-		lang_code= tar_lang_code,
+		lang_code=tar_lang_code,
 		processed_docname=processed_docname,
 		user=user,
 	)
