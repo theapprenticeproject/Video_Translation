@@ -21,7 +21,7 @@
 * Uses **uv** for fast and reliable package & dependency management.
 
 ## 📑 Documentation
-Full setup guides, architecture, API Flows, etc., are available in the **[Gitbook Documentation ↗](https://theapprenticeproject.gitbook.io/ai-video-localization/RbOX32eTbHDcOMXmXgoF/)**
+Full setup guides, architecture, API Flows, etc., are available in the **[Gitbook Documentation ↗](https://theapprenticeproject.gitbook.io/ai-video-localization/RbOX32eTbHDcOMXmXgoF/)**.
 
 ## 📦 Installation
 ### Bench Installation
@@ -52,15 +52,14 @@ For all future contributions:
 * Follow the [Setup Guide ↗](https://theapprenticeproject.gitbook.io/ai-video-localization/RbOX32eTbHDcOMXmXgoF/getting-started) in the docs to set up locally.
 * This project follows [Conventional Commits ↗](https://www.conventionalcommits.org/) (adopted from mid-development onwards).
 * Check **Issues** for past progress and future tracking.
-* #### Code Style (Optional)
-    * We use ***ruff*** (python) and *prettier* (JS/JSON) for consistent formatting.
-    * `pre-commit` is for code formatting and linting. An optional [install pre-commit](https://pre-commit.com/#installation) config is included in repo if required automatic checks, enable it:
-
+* #### Code Style
+    * We use ***ruff*** (python) and *prettier* (JS/JSON) for consistent formatting. (Recommended)
+    * `pre-commit` is for code formatting and linting. An **optional** [install pre-commit](https://pre-commit.com/#installation) config is included in repo if required automatic checks, enable it:
         ```bash
         cd apps/my_app
         pre-commit install
         ```
-    * Pre-commit is configured to use *ruff, eslint, prettier, pyupgrade* for checking and formatting your code
+    * Pre-commit is configured to use *ruff, eslint, prettier, pyupgrade* for checking and formatting your code.
 
 ## 📜 License
 
