@@ -38,13 +38,15 @@ def vtt_generate(audio_filename: str, lang_code: str, processed_docname: str):
 
 		try:
 			processed_doc.translated_subs = f"/files/processed/{os.path.basename(timestamps_path)}"
-			processed_doc.status = "Subtitle added to translated video"
+			processed_doc.activity = "Subtitle added to translated video"
+			processed_doc.status = "completed"
 			processed_doc.save(ignore_permissions=True)
 			frappe.db.commit()
 
 		except Exception as err:
-			processed_doc.status = "Subtitle Generation Failed - exception"
+			processed_doc.activity = "Subtitle Generation Failed - exception"
 			processed_doc.save(ignore_permissions=True)
+			processed_doc.status = "failed"
 			frappe.db.commit()
 
 			frappe.throw("Error during Subtitling generation : ", err)

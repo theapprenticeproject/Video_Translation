@@ -30,20 +30,22 @@ def lang_detection(audio_filename: str, processed_docname: str):
 			headers=headers,
 		)
 		detected_lang = response.json()["output"][0]["langPrediction"][0]["langCode"]
-		processed_doc.status = f"Language Detected: {detected_lang}, Dubbing Pending"
+		processed_doc.activity = f"Language Detected: {detected_lang}, Dubbing Pending"
 		processed_doc.save(ignore_permissions=True)
 		frappe.db.commit()
 		return detected_lang
 
 	except requests.RequestException as e:
-		processed_doc.status = "Language Detection Failed -  Requests"
+		processed_doc.activity = "Language Detection Failed -  Requests"
+		processed_doc.status = "failed"
 		processed_doc.save(ignore_permissions=True)
 		frappe.db.commit()
 
 		frappe.throw("Error Calling Detection API: ", e)
 
 	except Exception as e:
-		processed_doc.status = "Language Detection Failed -  exception"
+		processed_doc.activity = "Language Detection Failed -  exception"
+		processed_doc.status = "failed"
 		processed_doc.save(ignore_permissions=True)
 		frappe.db.commit()
 		frappe.throw("Error with exception : ", e)
@@ -127,12 +129,10 @@ def STS_pipe(
 				]
 			)
 			processed_doc.localized_vid = f"/files/processed/sts_{video_filename}"
-			# processed_doc.save(ignore_permissions=True)
-			# frappe.db.commit()
 		else:
 			print("No output path found - cant run SUBPROCESS call")
 
-		processed_doc.status = f"Translated speech generated from {src_lang_code} to {tar_lang_code}"
+		processed_doc.activity = f"Translated speech generated from {src_lang_code} to {tar_lang_code}"
 		processed_doc.save(ignore_permissions=True)
 		frappe.db.commit()
 		return {
@@ -142,14 +142,14 @@ def STS_pipe(
 		}
 
 	except requests.RequestException as err:
-		processed_doc.status = "Speech to Speech Translation failed -  Requests"
+		processed_doc.activity = "Speech to Speech Translation failed -  Requests"
 		processed_doc.save(ignore_permissions=True)
 		frappe.db.commit()
 		print(f"Error calling STS translation pipeline : {err}")
 		frappe.throw("Error Calling Speech to Speech Translation Pipeline : ", err)
 
 	except Exception as e:
-		processed_doc.status = "STS Translation failed"
+		processed_doc.activity = "STS Translation failed"
 		processed_doc.save(ignore_permissions=True)
 		frappe.db.commit()
 		print(f"exception occured during sts: {e}")
@@ -180,14 +180,15 @@ def text_translation(text: str, target_langcode: str, processed_docname: str):
 		logger.info(response)
 		logger.info("Received translation response : ", response.json())
 		translated_text = response.json()["pipelineResponse"][0]["output"][0]["target"]
-		processed_doc.status = f"Text translated into {target_langcode}"
+		processed_doc.activity = f"Text translated into {target_langcode}"
 		processed_doc.save(ignore_permissions=True)
 		frappe.db.commit()
 		return translated_text
 
 	except requests.RequestException as e:
 		logger.error(f"Requests exception occured during Translation : {e}")
-		processed_doc.status = "Text translation failed - Requests"
+		processed_doc.activity = "Text translation failed - Requests"
+		processed_doc.status = "failed"
 		processed_doc.save(ignore_permissions=True)
 		frappe.db.commit()
 
@@ -195,7 +196,8 @@ def text_translation(text: str, target_langcode: str, processed_docname: str):
 
 	except Exception as e:
 		logger.error(f"Exception occured during translation : {e}")
-		processed_doc.status = "Text translation failed"
+		processed_doc.activity = "Text translation failed"
+		processed_doc.status = "failed"
 		processed_doc.save(ignore_permissions=True)
 		frappe.db.commit()
 

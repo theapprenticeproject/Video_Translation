@@ -10,7 +10,7 @@ labs_client = ElevenLabs(api_key=frappe.conf.elevenlabs_api_key)
 
 def dubbing(video_filename: str, processed_docname: str):
 	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
-	processed_doc.status = "Dubbing in progress..."
+	processed_doc.activity = "Dubbing in progress..."
 	processed_doc.save(ignore_permissions=True)
 	frappe.db.commit()
 
@@ -59,12 +59,13 @@ def dubbing(video_filename: str, processed_docname: str):
 
 		else:
 			logger.info("Dubbing failed or timed out")
-			processed_doc.status = "Dubbing failed or timed out"
+			processed_doc.activity = "Dubbing failed or timed out"
 			processed_doc.save(ignore_permissions=True)
 			frappe.db.commit()
 			return {"status": "failed", "message": "Dubbing failed or timed out"}
 	except Exception as e:
 		logger.error(f"Error occurred during hindi dubbing : {e}")
-		processed_doc.status = "Error during dubbing"
+		processed_doc.activity = "Error during dubbing"
+		processed_doc.status = "failed"
 		processed_doc.save(ignore_permissions=True)
 		frappe.db.commit()
