@@ -16,5 +16,32 @@ frappe.ui.form.on("Processed Video Info", {
         } else {
             frm.fields_dict.video_preview.$wrapper.empty()
         }
+
+        frm.clear_custom_buttons();
+        if ((frm.doc.status || "").trim() !== "pending") {
+            frm.add_custom_button("Retry", () => {
+                frappe.show_alert("Re-processing...", "orange")
+                frappe.db.get_value("Video Info", frm.doc.origin_vid_link, "target_lang").then(
+                    r => {
+                        const tar_lang = r.message.target_lang
+                        frappe.call({
+                            method: "my_app.media-queues.tasks_pipe.retry_trigger",
+                            args: {
+                                video_filename: frm.doc.origin_vid_link,
+                                tar_lang: tar_lang,
+                                processed_docname: frm.doc.name,
+                            }
+                        })
+                    }
+                )
+            })
+        }
     },
 });
+
+
+const all_fields_filled = (frm) => {
+    const required_fields = ["localized_vid", "translated_aud", "processed_on", "status", "origin_vid_link", "translated_subs"]
+
+    return required_fields.every((field) => !!frm.doc[field])
+}

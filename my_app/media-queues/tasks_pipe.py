@@ -13,12 +13,14 @@ in main thread, thus avoiding signal error.
 In frappe, imports can happen inside worker threads thus function calling inside a queue (managed by a worker).
 """
 
+languages = {"Marathi": "mr", "Punjabi": "pa"}
+
 
 @frappe.whitelist()
 def trigger_pipeline(video_info_docname: str, audio_filename: str, video_filename: str):
 	processed_doc = frappe.new_doc("Processed Video Info")
 	processed_doc.origin_vid_link = video_info_docname
-	processed_doc.status = "Pending"
+	processed_doc.status = "pending"
 	processed_doc.processed_on = frappe.utils.now()
 	processed_doc.insert(ignore_permissions=True)
 	frappe.db.commit()
@@ -67,7 +69,6 @@ def language_detection(audio_filename: str, processed_docname: str, video_filena
 			# 	user=user,
 			# )
 			# elevenlab service for non-hindi
-			languages = {"Marathi": "mr", "Punjabi": "pa"}
 			tar_langcode = languages.get(target_language.strip())
 			frappe.enqueue(
 				method="my_app.media-queues.tasks_pipe.labs_sts_translation",
@@ -92,7 +93,7 @@ def sts_translation(
 	)
 	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
 	processed_doc.translated_aud = processed_audio_info["audio_filepath"]
-	processed_doc.status = "Video Translation Done - sts"
+	processed_doc.activity = "Video Translation Done - sts"
 	processed_doc.save(ignore_permissions=True)
 	frappe.db.commit()
 
@@ -116,11 +117,29 @@ def sts_translation(
 	)
 
 
+@frappe.whitelist()
+def retry_trigger(video_filename: str, tar_lang: str, processed_docname: str):
+	tar_lang_code = languages.get(tar_lang.lower().strip())
+	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
+	processed_doc.retry_count = (processed_doc.retry_count or 0) + 1
+	processed_doc.activity = "Re-processing triggered"
+	processed_doc.save(ignore_permissions=True)
+	frappe.db.commit()
+	frappe.enqueue(
+		method="my_app.media-queues.tasks_pipe.labs_sts_translation",
+		queue="long",
+		video_filename=video_filename,
+		tar_lang_code=tar_lang_code,
+		processed_docname=processed_docname,
+		user=frappe.session.user,
+	)
+
+
 def labs_sts_translation(video_filename: str, tar_lang_code: str, processed_docname: str, user: str):
 	processed_audio_info = speech_to_text(tar_lang_code, video_filename, processed_docname)
 	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
 	processed_doc.translated_aud = processed_audio_info["audio_filepath"]
-	processed_doc.status = "Video Translation done - ElevenLabs STS"
+	processed_doc.activity = "Video Translation done - ElevenLabs STS"
 	processed_doc.save(ignore_permissions=True)
 	frappe.db.commit()
 
@@ -148,7 +167,7 @@ def labs_sts_translation(video_filename: str, tar_lang_code: str, processed_docn
 def hindi_dubbing(video_filename: str, processed_docname: str, user: str):
 	processed_videofile_url = dubbing(video_filename, processed_docname)
 	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
-	processed_doc.status = "Dubbing Completed"
+	processed_doc.activity = "Dubbing Completed"
 	processed_doc.localized_vid = processed_videofile_url
 	processed_doc.save(ignore_permissions=True)
 	frappe.db.commit()
@@ -175,7 +194,7 @@ def hindi_dubbing(video_filename: str, processed_docname: str, user: str):
 def extract_audio(videofile: str, processed_docname: str, user: str):
 	extraction_info = audio_extraction(videofile)
 	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
-	processed_doc.status = "Audio Extracted from Dubbed Vid"
+	processed_doc.activity = "Audio Extracted from Dubbed Vid"
 	processed_doc.translated_aud = extraction_info["audiofile_url"]
 	processed_doc.save(ignore_permissions=True)
 	frappe.db.commit()
