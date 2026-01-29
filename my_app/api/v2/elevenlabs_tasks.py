@@ -76,6 +76,7 @@ def text_to_speech(text: str, langcode: str, vid_filename: str, processed_docnam
 		subprocess.run(
 			[
 				"ffmpeg",
+				"-y",
 				"-nostdin",
 				"-i",
 				input_videopath,

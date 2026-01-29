@@ -27,11 +27,12 @@ frappe.ui.form.on("Processed Video Info", {
                         frappe.call({
                             method: "my_app.media-queues.tasks_pipe.retry_trigger",
                             args: {
-                                video_filename: frm.doc.origin_vid_link,
+                                video_info_name: frm.doc.origin_vid_link,
                                 tar_lang: tar_lang,
                                 processed_docname: frm.doc.name,
                             }
                         })
+                        console.log("target language: ", tar_lang)
                     }
                 )
             })

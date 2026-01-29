@@ -118,10 +118,12 @@ def sts_translation(
 
 
 @frappe.whitelist()
-def retry_trigger(video_filename: str, tar_lang: str, processed_docname: str):
-	tar_lang_code = languages.get(tar_lang.lower().strip())
+def retry_trigger(video_info_name: str, tar_lang: str, processed_docname: str):
+	video_filename = frappe.db.get_value("Video Info", video_info_name, "original_vid").replace("/files/original", "").split("/")[1]
+	tar_lang_code = languages.get(tar_lang.strip())
 	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
 	processed_doc.retry_count = (processed_doc.retry_count or 0) + 1
+	processed_doc.status = "pending"
 	processed_doc.activity = "Re-processing triggered"
 	processed_doc.save(ignore_permissions=True)
 	frappe.db.commit()
