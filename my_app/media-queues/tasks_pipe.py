@@ -1,5 +1,7 @@
 """Server side APIs being called are queued all from this file. Each function is queued after each queued is successful/terminated"""
 
+import json
+
 import frappe
 
 from my_app.api.v1.audio_extract import audio_extraction
@@ -7,6 +9,7 @@ from my_app.api.v1.bhashini_tasks import STS_pipe, lang_detection
 from my_app.api.v1.subtitle import vtt_generate
 from my_app.api.v2.dub_labs import dubbing
 from my_app.api.v2.elevenlabs_tasks import speech_to_text
+from my_app.helper.options import normalize_keyterms, sanitize_pro_dicts
 
 """Not importing the function in dub_sieve.py directly because import sieve tries to set up signal handler which only works
 in main thread, thus avoiding signal error.
@@ -118,8 +121,15 @@ def sts_translation(
 
 
 @frappe.whitelist()
-def retry_trigger(video_info_name: str, tar_lang: str, processed_docname: str):
-	video_filename = frappe.db.get_value("Video Info", video_info_name, "original_vid").replace("/files/original", "").split("/")[1]
+def retry_trigger(video_info_name: str, tar_lang: str, processed_docname: str, options):
+	options = json.loads(options)
+	key_terms = normalize_keyterms(options.get("keyterm_prompt"))
+	pro_dicts = sanitize_pro_dicts(options.get("pronunciation_dict"))
+	video_filename = (
+		frappe.db.get_value("Video Info", video_info_name, "original_vid")
+		.replace("/files/original", "")
+		.split("/")[1]
+	)
 	tar_lang_code = languages.get(tar_lang.strip())
 	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
 	processed_doc.retry_count = (processed_doc.retry_count or 0) + 1
@@ -133,12 +143,23 @@ def retry_trigger(video_info_name: str, tar_lang: str, processed_docname: str):
 		video_filename=video_filename,
 		tar_lang_code=tar_lang_code,
 		processed_docname=processed_docname,
+		key_terms=key_terms,
+		pro_dicts=pro_dicts,
 		user=frappe.session.user,
 	)
 
 
-def labs_sts_translation(video_filename: str, tar_lang_code: str, processed_docname: str, user: str):
-	processed_audio_info = speech_to_text(tar_lang_code, video_filename, processed_docname)
+def labs_sts_translation(
+	video_filename: str,
+	tar_lang_code: str,
+	processed_docname: str,
+	key_terms: list[str],
+	pro_dicts: dict[str, str],
+	user: str,
+):
+	processed_audio_info = speech_to_text(
+		tar_lang_code, video_filename, processed_docname, key_terms, pro_dicts
+	)
 	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
 	processed_doc.translated_aud = processed_audio_info["audio_filepath"]
 	processed_doc.activity = "Video Translation done - ElevenLabs STS"
