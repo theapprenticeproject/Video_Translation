@@ -33,7 +33,7 @@ frappe.ui.form.on("Processed Video Info", {
                         {
                             fieldname: "pronunciation_dict",
                             label: "Pronounciation Dictionary",
-                            description: "One rule per line (word-pronunciation). Ex: शुक्र-सुक्कुर, Apprentice-uh-pren-tis",
+                            description: "One rule per line (word-pronunciation). Ex: शुक्र-सुक्कुर, Apprentice-uh pren tis",
                             fieldtype: "Small Text"
                         }
                     ],

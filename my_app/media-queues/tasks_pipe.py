@@ -143,9 +143,9 @@ def retry_trigger(video_info_name: str, tar_lang: str, processed_docname: str, o
 		video_filename=video_filename,
 		tar_lang_code=tar_lang_code,
 		processed_docname=processed_docname,
+		user=frappe.session.user,
 		key_terms=key_terms,
 		pro_dicts=pro_dicts,
-		user=frappe.session.user,
 	)
 
 
@@ -153,9 +153,9 @@ def labs_sts_translation(
 	video_filename: str,
 	tar_lang_code: str,
 	processed_docname: str,
-	key_terms: list[str],
-	pro_dicts: dict[str, str],
 	user: str,
+	key_terms: list[str] | None = None,
+	pro_dicts: dict[str, str] | None = None,
 ):
 	processed_audio_info = speech_to_text(
 		tar_lang_code, video_filename, processed_docname, key_terms, pro_dicts

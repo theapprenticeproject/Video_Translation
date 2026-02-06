@@ -1,8 +1,9 @@
-import math
 import os
 
 import frappe
 from groq import Groq
+
+from my_app.api.v2.dub_labs import labs_client
 
 groq_client = Groq(api_key=frappe.conf.groq_api_key)
 
@@ -11,32 +12,24 @@ def vtt_generate(audio_filename: str, lang_code: str, processed_docname: str):
 	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
 	audio_file_path = frappe.get_site_path("public", "files", "processed", audio_filename)
 
-	# formatting time in HH:MM:SS.mmm ; 'm' denoting milliseconds
-	def format_time(seconds):
-		hours = math.floor(seconds / 3600)
-		seconds %= 3600
-		minutes = math.floor(seconds / 60)
-		seconds %= 60
-		milliseconds = math.floor((seconds - math.floor(seconds)) * 1000)
-		seconds = math.floor(seconds)
-		formatted_time = f"{hours:02d}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}"
-
-		return formatted_time
-
-	def generate_vtt_file(segments, audio_filename):
+	def srt_to_webvtt(content: str, audio_filename: str):
 		timestamps_path = frappe.get_site_path(
 			"public", "files", "processed", f"{os.path.splitext(audio_filename)[0]}.vtt"
 		)
-		with open(timestamps_path, "w") as f:
-			text = "WEBVTT\n\n"
-			for segment in segments:
-				segment_start = format_time(segment["start"])
-				segment_end = format_time(segment["end"])
-				text += f"{segment_start} --> {segment_end}\n"
-				text += f"{segment['text'].strip()}\n\n"
-			f.write(text)
 
 		try:
+			with open(timestamps_path, "w") as f:
+				lines = content.splitlines()
+				vtt_lines = ["WEBVTT", ""]
+				for line in lines:
+					if line.isdigit():
+						continue
+
+					if "-->" in line:
+						line = line.replace(",", ".")
+					vtt_lines.append(line)
+				f.write("\n".join(vtt_lines))
+
 			processed_doc.translated_subs = f"/files/processed/{os.path.basename(timestamps_path)}"
 			processed_doc.activity = "Subtitle added to translated video"
 			processed_doc.status = "completed"
@@ -52,11 +45,10 @@ def vtt_generate(audio_filename: str, lang_code: str, processed_docname: str):
 			frappe.throw("Error during Subtitling generation : ", err)
 
 	with open(audio_file_path, "rb") as file:
-		transcription = groq_client.audio.transcriptions.create(
+		transcription = labs_client.speech_to_text.convert(
 			file=file,
-			model="whisper-large-v3-turbo",
-			response_format="verbose_json",
-			language=lang_code,  # optional
-			timestamp_granularities=["segment"],
+			model_id="scribe_v2",
+			diarize=True,
+			additional_formats=[{"format": "srt", "max_segment_duration_s": 5}],
 		)
-		generate_vtt_file(transcription.segments, audio_filename)
+		srt_to_webvtt(transcription.additional_formats[0].content, audio_filename)
