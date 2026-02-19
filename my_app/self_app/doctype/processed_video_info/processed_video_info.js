@@ -27,7 +27,7 @@ frappe.ui.form.on("Processed Video Info", {
                         {
                             label: "Key Terms",
                             fieldname: "keyterm_prompt",
-                            description: "Comma-separated words or phrases for correct recognition during transcription",
+                            description: "Comma-separated words or phrases for correct recognition during transcription. Ex: Budget, Finance, etc.",
                             fieldtype: "Data"
                         },
                         {

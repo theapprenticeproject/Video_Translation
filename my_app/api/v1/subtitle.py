@@ -32,7 +32,7 @@ def vtt_generate(audio_filename: str, lang_code: str, processed_docname: str):
 
 			processed_doc.translated_subs = f"/files/processed/{os.path.basename(timestamps_path)}"
 			processed_doc.activity = "Subtitle added to translated video"
-			processed_doc.status = "completed"
+			processed_doc.status = "success"
 			processed_doc.save(ignore_permissions=True)
 			frappe.db.commit()
 
