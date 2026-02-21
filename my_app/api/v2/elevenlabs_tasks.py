@@ -81,7 +81,7 @@ def text_to_speech(
 		)
 	else:
 		response = labs_client.text_to_speech.convert(text=text, voice_id=lang_voice_id, model_id="eleven_v3")
-	logger.info(f"Output audipath: {output_audiopath}")
+	logger.info(f"Output audiopath: {output_audiopath}")
 	logger.info(f"Response received from TTS model: {response}")
 	with open(output_audiopath, "wb") as f:
 		for chunk in response:

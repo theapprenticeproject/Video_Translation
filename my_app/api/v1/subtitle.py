@@ -1,6 +1,7 @@
 import os
 
 import frappe
+from frappe.utils import now_datetime
 from groq import Groq
 
 from my_app.api.v2.dub_labs import labs_client
@@ -33,6 +34,8 @@ def vtt_generate(audio_filename: str, lang_code: str, processed_docname: str):
 			processed_doc.translated_subs = f"/files/processed/{os.path.basename(timestamps_path)}"
 			processed_doc.activity = "Subtitle added to translated video"
 			processed_doc.status = "success"
+			processed_doc.percent = 100
+			processed_doc.processed_on = now_datetime()
 			processed_doc.save(ignore_permissions=True)
 			frappe.db.commit()
 
@@ -49,6 +52,6 @@ def vtt_generate(audio_filename: str, lang_code: str, processed_docname: str):
 			file=file,
 			model_id="scribe_v2",
 			diarize=True,
-			additional_formats=[{"format": "srt", "max_segment_duration_s": 5}],
+			additional_formats=[{"format": "srt", "max_segment_duration_s": 6}],
 		)
 		srt_to_webvtt(transcription.additional_formats[0].content, audio_filename)

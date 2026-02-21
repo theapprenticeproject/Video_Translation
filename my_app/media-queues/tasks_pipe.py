@@ -60,7 +60,8 @@ def language_detection(audio_filename: str, processed_docname: str, video_filena
 				processed_docname=processed_docname,
 				user=user,
 			)
-		else:  # bhashini API services for non-hindi translations
+		else:
+			# bhashini API services for non-hindi translations
 			# frappe.enqueue(
 			# 	method="my_app.media-queues.tasks_pipe.sts_translation",
 			# 	queue="long",
@@ -71,6 +72,7 @@ def language_detection(audio_filename: str, processed_docname: str, video_filena
 			# 	processed_docname=processed_docname,
 			# 	user=user,
 			# )
+
 			# elevenlab service for non-hindi
 			tar_langcode = languages.get(target_language.strip())
 			frappe.enqueue(
@@ -163,6 +165,7 @@ def labs_sts_translation(
 	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
 	processed_doc.translated_aud = processed_audio_info["audio_filepath"]
 	processed_doc.activity = "Video Translation done - ElevenLabs STS"
+	processed_doc.percent = 80
 	processed_doc.save(ignore_permissions=True)
 	frappe.db.commit()
 
@@ -192,6 +195,7 @@ def hindi_dubbing(video_filename: str, processed_docname: str, user: str):
 	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
 	processed_doc.activity = "Dubbing Completed"
 	processed_doc.localized_vid = processed_videofile_url
+	processed_doc.percent = 75
 	processed_doc.save(ignore_permissions=True)
 	frappe.db.commit()
 
@@ -234,15 +238,15 @@ def extract_audio(videofile: str, processed_docname: str, user: str):
 
 def get_subtitles(audio_filename: str, lang_code: str, processed_docname: str, user: str):
 	vtt_generate(audio_filename, lang_code, processed_docname)
-	frappe.get_doc(
-		{
-			"doctype": "Notification Log",
-			"for_user": user,
-			"subject": "Subtitles Generated",
-			"email_content": "Subtitles File Created",
-			"type": "Alert",
-		}
-	).insert(ignore_permissions=True)
+	# frappe.get_doc(
+	# 	{
+	# 		"doctype": "Notification Log",
+	# 		"for_user": user,
+	# 		"subject": "Subtitles Generated",
+	# 		"email_content": "Subtitles File Created",
+	# 		"type": "Alert",
+	# 	}
+	# ).insert(ignore_permissions=True)
 
 	frappe.get_doc(
 		{

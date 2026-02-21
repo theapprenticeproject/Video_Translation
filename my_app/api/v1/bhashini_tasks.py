@@ -31,6 +31,7 @@ def lang_detection(audio_filename: str, processed_docname: str):
 		)
 		detected_lang = response.json()["output"][0]["langPrediction"][0]["langCode"]
 		processed_doc.activity = f"Language Detected: {detected_lang}, Dubbing Pending"
+		processed_doc.percent = 20
 		processed_doc.save(ignore_permissions=True)
 		frappe.db.commit()
 		return detected_lang
@@ -181,6 +182,7 @@ def text_translation(text: str, target_langcode: str, processed_docname: str):
 		logger.info("Received translation response : ", response.json())
 		translated_text = response.json()["pipelineResponse"][0]["output"][0]["target"]
 		processed_doc.activity = f"Text translated into {target_langcode}"
+		processed_doc.percent = 50
 		processed_doc.save(ignore_permissions=True)
 		frappe.db.commit()
 		return translated_text
