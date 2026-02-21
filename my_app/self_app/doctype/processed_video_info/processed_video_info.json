@@ -9,14 +9,14 @@
   "translated_aud",
   "translated_subs",
   "localized_vid",
-  "section_break_xwdl",
+  "column_break_vylp",
   "status",
   "retry_count",
-  "column_break_rrje",
   "activity",
   "processed_on",
   "section_break_emcz",
-  "video_preview"
+  "video_preview",
+  "percent"
  ],
  "fields": [
   {
@@ -43,14 +43,6 @@
    "label": "Status",
    "options": "pending\nsuccess\nfailed",
    "read_only": 1
-  },
-  {
-   "fieldname": "section_break_xwdl",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "column_break_rrje",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "origin_vid_link",
@@ -84,12 +76,23 @@
    "fieldtype": "Data",
    "label": "Activity",
    "read_only": 1
+  },
+  {
+   "fieldname": "percent",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "label": "percent",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_vylp",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-19 20:21:48.231218",
+ "modified": "2026-02-21 10:27:09.201888",
  "modified_by": "sysadm@proton.com",
  "module": "self-app",
  "name": "Processed Video Info",

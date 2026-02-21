@@ -62,5 +62,27 @@ frappe.ui.form.on("Processed Video Info", {
 
             })
         }
+
+        if (!frm.doc.percent) return;
+        const percent = frm.doc.percent;
+        const activity = frm.doc.activity;
+        if (percent < 100 && frm.doc.status === "pending") {
+            frm.dashboard.show_progress("Localization Progress", percent, activity)
+        }
+        // keeping progress bar persistant for some seconds from latest processed time 
+        else if (frm.doc.percent === 100 && frm.doc.processed_on && frm.doc.status === "success") {
+            const processed_time = new Date(frm.doc.processed_on)
+            const now = new Date()
+            const diff_secs = (now - processed_time) / 1000
+
+            if (diff_secs < 6) {
+                frm.dashboard.show_progress("Localization Progress", 100, activity)
+
+                setTimeout(() => { frm.dashboard.hide() }, (6 - diff_secs) * 1000)
+            }
+        } else {
+            frm.dashboard.hide()
+        }
+
     },
 });

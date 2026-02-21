@@ -5,7 +5,7 @@ frappe.listview_settings['Processed Video Info'] = {
         } else if (doc.status === "failed") {
             return [__("Failed"), "red", "status,=,failed"];
         } else if (doc.status === "pending") {
-            return [__("Pending"), "orange", "status,=,pending"];
+            return [__("Pending"), "yellow", "status,=,pending"];
         }
     }
 };
