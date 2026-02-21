@@ -1,6 +1,23 @@
 // Copyright (c) 2025, VT and contributors
 // For license information, please see license.txt
 
+const add_view_processed_button = (frm) => {
+    frappe.db.get_value('Processed Video Info',
+        { origin_vid_link: frm.doc.name },
+        ['name']
+    ).then(r => {
+        if (r.message && r.message.name) {
+
+            // Prevent duplicate buttons
+            frm.remove_custom_button('View Processed Video');
+
+            frm.add_custom_button('View Processed Video', () => {
+                frappe.set_route('Form', 'Processed Video Info', r.message.name);
+            });
+        }
+    });
+}
+
 video_info_docname = ""
 frappe.ui.form.on("Video Info", {
     onload: (frm) => {
@@ -11,7 +28,7 @@ frappe.ui.form.on("Video Info", {
                     frm.refresh_field("original_vid");
                     frappe.show_alert({ message: __("Video Uploaded and Structured"), indicator: "green" }, 3);
                     video_info_docname = data.video_info_docname
-                    setTimeout(() => { }, 750);
+                    // setTimeout(() => { }, 750);
                 });
             } else {
                 console.log("Video path already set correctly, skipped");
@@ -19,12 +36,12 @@ frappe.ui.form.on("Video Info", {
         });
 
         // Listen for audio extraction completion
-        frappe.realtime.on("audio_extraction_completed", (data) => {
+        frappe.realtime.on("audio_extraction_completed", async (data) => {
 
-            frm.set_value("original_audio_extracted", data.audiofile_url);
-            frm.save();
+            await frm.set_value("original_audio_extracted", data.audiofile_url);
+            await frm.save();
             frappe.show_alert({ message: __("Audio extracted"), indicator: "green" }, 3);
-            setTimeout(() => { }, 1500);
+            // setTimeout(() => { }, 1500);
             frm.call({
                 method: "my_app.media-queues.tasks_pipe.trigger_pipeline",
                 args: {
@@ -34,6 +51,7 @@ frappe.ui.form.on("Video Info", {
                 },
                 callback: () => {
                     frappe.show_alert({ message: __("Translation Pipeline has started."), indicator: "yellow" })
+                    add_view_processed_button(frm)
                 }
             })
         });
@@ -50,12 +68,11 @@ frappe.ui.form.on("Video Info", {
                     args: {
                         videofile_url: frm.doc.original_vid
                     },
-                    callback: (data) => {
-                        frappe.show_alert("Refresh & Click 'Start Process' again if audio not extracted.")
-                    }
                 });
             });
         }
+
+        if (!frm.is_new()) add_view_processed_button(frm)
     }
 
 });
