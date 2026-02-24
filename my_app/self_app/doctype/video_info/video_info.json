@@ -11,6 +11,7 @@
   "target_lang",
   "column_break_sjod",
   "original_vid",
+  "processed_status",
   "section_break_twg4",
   "original_audio_extracted",
   "created_on"
@@ -65,12 +66,20 @@
    "fieldname": "created_on",
    "fieldtype": "Datetime",
    "label": "Created On"
+  },
+  {
+   "fetch_from": "processed_vid_link.status",
+   "fieldname": "processed_status",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Processed Status",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-25 22:47:27.611879",
+ "modified": "2026-02-24 23:19:28.855713",
  "modified_by": "sysadm@proton.com",
  "module": "self-app",
  "name": "Video Info",
