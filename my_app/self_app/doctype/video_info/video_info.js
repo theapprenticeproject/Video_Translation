@@ -11,9 +11,10 @@ const add_view_processed_button = (frm) => {
             // Prevent duplicate buttons
             frm.remove_custom_button('View Processed Video');
 
-            frm.add_custom_button('View Processed Video', () => {
+            let btn = frm.add_custom_button('View Processed Video', () => {
                 frappe.set_route('Form', 'Processed Video Info', r.message.name);
             });
+            btn.addClass('btn-blue')
         }
     });
 }
@@ -59,7 +60,7 @@ frappe.ui.form.on("Video Info", {
 
     refresh: (frm) => {
         if (frm.doc.original_vid && !frm.doc.original_audio_extracted) {
-            frm.add_custom_button("Start Process", () => {
+            let btn = frm.add_custom_button("Start Process", () => {
                 frm.clear_custom_buttons();
                 frappe.show_alert("Starting video processing...", "orange");
 
@@ -70,6 +71,7 @@ frappe.ui.form.on("Video Info", {
                     },
                 });
             });
+            btn.addClass('btn-blue')
         }
 
         if (!frm.is_new()) add_view_processed_button(frm)

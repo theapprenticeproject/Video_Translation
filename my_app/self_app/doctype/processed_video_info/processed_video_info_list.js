@@ -1,5 +1,5 @@
 frappe.listview_settings['Processed Video Info'] = {
-    get_indicator: function(doc) {
+    get_indicator: function (doc) {
         if (doc.status === "success") {
             return [__("success"), "green", "status,=,success"];
         } else if (doc.status === "failed") {

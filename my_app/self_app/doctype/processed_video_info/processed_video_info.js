@@ -27,13 +27,13 @@ frappe.ui.form.on("Processed Video Info", {
                         {
                             label: "Key Terms",
                             fieldname: "keyterm_prompt",
-                            description: "Comma-separated words or phrases for correct recognition during transcription. Ex: Budget, Finance, etc.",
+                            description: "Comma-separated words or phrases that should be paid extra attention to during transcription. Ex: Budget, Finance, etc.",
                             fieldtype: "Data"
                         },
                         {
                             fieldname: "pronunciation_dict",
                             label: "Pronounciation Dictionary",
-                            description: "One rule per line (word-pronunciation). Ex: शुक्र-सुक्कुर, Apprentice-uh pren tis",
+                            description: "Specify custom pronunciations, one per line. (word-pronunciation). For example:<br>शुक्र-सुक्कुर<br>Apprentice-uh pren tis",
                             fieldtype: "Small Text"
                         }
                     ],
