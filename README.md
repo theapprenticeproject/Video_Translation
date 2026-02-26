@@ -14,7 +14,7 @@
 ## ✨ Features
 * Localizes videos into multiple Indic languages.
 * Built on the **Frappe framework** with background queues to handle concurrent uploads.
-* Supports lip-sync for videos, along with translated subtitles for all outputs.
+* Supports translated subtitles for all outputs.
 * Enables educators to create profiles and translate video content with a single button click.
 * Generates all components of a localized video — subtitles, translated audio, and more.
 * Provides versioned APIs for easier pipeline extension.

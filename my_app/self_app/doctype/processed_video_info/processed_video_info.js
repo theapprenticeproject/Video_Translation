@@ -27,7 +27,7 @@ frappe.ui.form.on("Processed Video Info", {
                         {
                             label: "Key Terms",
                             fieldname: "keyterm_prompt",
-                            description: "Comma-separated words or phrases that should be paid extra attention to during transcription. Ex: Budget, Finance, etc.",
+                            description: "Comma-separated words or phrases that should clearly be paid extra attention to during transcription. Ex: Budget, Finance Literacy, etc.",
                             fieldtype: "Data"
                         },
                         {
