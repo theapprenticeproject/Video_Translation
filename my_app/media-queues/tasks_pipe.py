@@ -9,15 +9,10 @@ from my_app.api.v1.bhashini_tasks import STS_pipe, lang_detection
 from my_app.api.v1.subtitle import vtt_generate
 from my_app.api.v2.dub_labs import dubbing
 from my_app.api.v2.elevenlabs_tasks import speech_to_text
+from my_app.api.v2.segment_tasks import segment_main
 from my_app.helper.options import normalize_keyterms, sanitize_pro_dicts
 
-"""Not importing the function in dub_sieve.py directly because import sieve tries to set up signal handler which only works
-in main thread, thus avoiding signal error.
-In frappe, imports can happen inside worker threads thus function calling inside a queue (managed by a worker).
-"""
-
 languages = {"Marathi": "mr", "Punjabi": "pa"}
-
 
 @frappe.whitelist()
 def trigger_pipeline(video_info_docname: str, audio_filename: str, video_filename: str):
@@ -76,7 +71,7 @@ def language_detection(audio_filename: str, processed_docname: str, video_filena
 			# elevenlab service for non-hindi
 			tar_langcode = languages.get(target_language.strip())
 			frappe.enqueue(
-				method="my_app.media-queues.tasks_pipe.labs_sts_translation",
+				method="my_app.media-queues.tasks_pipe.segmented_sts",
 				queue="long",
 				video_filename=video_filename,
 				tar_lang_code=tar_langcode,
@@ -148,6 +143,40 @@ def retry_trigger(video_info_name: str, tar_lang: str, processed_docname: str, o
 		user=frappe.session.user,
 		key_terms=key_terms,
 		pro_dicts=pro_dicts,
+	)
+
+
+def segmented_sts(
+	video_filename: str,
+	tar_lang_code: str,
+	processed_docname: str,
+	user: str,
+	pro_dicts: dict[str, str] | None = None,
+):
+	processed_audio_info = segment_main(video_filename, tar_lang_code, processed_docname, pro_dicts)
+	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
+	processed_doc.translated_aud = processed_audio_info["audio_filepath"]
+	processed_doc.activity = "Video Translation done - ElevenLabs STS"
+	processed_doc.percent = 80
+	processed_doc.save(ignore_permissions=True)
+	frappe.db.commit()
+	frappe.get_doc(
+		{
+			"doctype": "Notification Log",
+			"for_user": user,
+			"subject": "Translation Completed",
+			"email_content": f"Translation done in {tar_lang_code}",
+			"type": "Alert",
+		}
+	).insert(ignore_permissions=True)
+
+	frappe.enqueue(
+		method="my_app.media-queues.tasks_pipe.get_subtitles",
+		queue="short",
+		audio_filename=processed_audio_info["audio_filename"],
+		lang_code=tar_lang_code,
+		processed_docname=processed_docname,
+		user=user,
 	)
 
 
