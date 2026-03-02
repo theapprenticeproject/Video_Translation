@@ -157,11 +157,16 @@ def STS_pipe(
 		frappe.throw(f"Exception occured during STS: {e}")
 
 
-def text_translation(text: str, target_langcode: str, processed_docname: str):
+def text_translation(text, target_langcode: str, processed_docname: str):
 	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
 
 	try:
 		headers = {"Authorization": frappe.conf.api_auth_value, "Content-Type": "application/json"}
+		is_single_input = isinstance(text, str)
+		if is_single_input:
+			text_list = [text]
+		else:
+			text_list = text
 		body = {
 			"pipelineTasks": [
 				{
@@ -172,7 +177,7 @@ def text_translation(text: str, target_langcode: str, processed_docname: str):
 					},
 				}
 			],
-			"inputData": {"input": [{"source": text}]},
+			"inputData": {"input": [{"source": t} for t in text_list]},
 		}
 		logger.info("Sending translation api request")
 		response = requests.post(
@@ -180,12 +185,17 @@ def text_translation(text: str, target_langcode: str, processed_docname: str):
 		)
 		logger.info(response)
 		logger.info("Received translation response : ", response.json())
-		translated_text = response.json()["pipelineResponse"][0]["output"][0]["target"]
+		response_list = response.json()["pipelineResponse"][0]["output"]
+		translated_text_list = [item["target"] for item in response_list]
 		processed_doc.activity = f"Text translated into {target_langcode}"
 		processed_doc.percent = 50
 		processed_doc.save(ignore_permissions=True)
 		frappe.db.commit()
-		return translated_text
+
+		if is_single_input:
+			return translated_text_list[0]
+
+		return translated_text_list
 
 	except requests.RequestException as e:
 		logger.error(f"Requests exception occured during Translation : {e}")
