@@ -80,9 +80,17 @@ frappe.ui.form.on("Processed Video Info", {
 
                 setTimeout(() => { frm.dashboard.hide() }, (6 - diff_secs) * 1000)
             }
+
+            // if (!frm.doc.onscreen_texts || frm.doc.onscreen_texts.length === 0) {
+            //     frm.reload_doc();
+            // }
         } else {
             frm.dashboard.hide()
         }
 
+
+        // const childTable = frm.fields_dict["onscreen_texts"].grid;
+        const hasRows = frm.doc.onscreen_texts && frm.doc.onscreen_texts.length > 0;
+        frm.toggle_display("onscreen_texts", hasRows);
     },
 });

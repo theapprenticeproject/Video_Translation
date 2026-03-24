@@ -22,19 +22,36 @@ FONT_SIZE = 48
 PADDING_X = 35
 PADDING_Y = 20
 
-EXCLUDE_WORDS = [
-	"THE APPRENTICE PROJECT",
-	"BUDGET",
-	"EDUCATION",
-	"REGISTER NOW",
-	"NOW",
-	"FINANCIAL LITERACY COURSE",
-]
+EXCLUDE_WORDS = ["THE APPRENTICE PROJECT"]
 translation_cache = {}
 language_fonts_path = {
 	"mr": "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Bold.ttf",
 	"pa": "/usr/share/fonts/truetype/noto/NotoSansGurmukhi-Bold.ttf",
 }
+
+
+def populate_text_table(processed_docname: str, extracted_texts: list):
+	try:
+		processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
+		processed_doc.set("onscreen_texts", [])
+
+		for i in extracted_texts:
+			processed_doc.append(
+				"onscreen_texts",
+				{
+					"text": i["text"],
+					"translated_text": i["translated_text"],
+					"start_time": i["start_time"],
+					"end_time": i["end_time"],
+				},
+			)
+
+		processed_doc.save(ignore_permissions=True)
+		frappe.db.commit()
+		logger.info("Successfully populated onscreen text table ")
+	except Exception as e:
+		logger.error("Error populating onscreen text table", e)
+		frappe.throw("Failed to populate onscreen text table: ", e)
 
 
 def screen_txtoverlay(vid_filename: str, tar_langcode: str, processed_docname: str):
@@ -58,6 +75,7 @@ def screen_txtoverlay(vid_filename: str, tar_langcode: str, processed_docname: s
 
 	# PARSE JSON & GENERATE FILTERS DIRECTLY
 	filters = []
+	extracted_table_data = []
 	annotation_result = result.annotation_results[0]
 
 	for annotation in annotation_result.text_annotations:
@@ -75,6 +93,20 @@ def screen_txtoverlay(vid_filename: str, tar_langcode: str, processed_docname: s
 		translated_text = translation_cache[original_text]
 
 		for segment in annotation.segments:
+			if not segment.frames:
+				continue
+
+			seg_start = segment.frames[0].time_offset.total_seconds()
+			seg_end = segment.frames[-1].time_offset.total_seconds() + FRAME_DURATION
+			extracted_table_data.append(
+				{
+					"text": original_text,
+					"translated_text": translated_text,
+					"start_time": seg_start,
+					"end_time": seg_end,
+				}
+			)
+
 			for frame in segment.frames:
 				start_time = frame.time_offset.total_seconds()
 				end_time = start_time + FRAME_DURATION
@@ -109,25 +141,29 @@ def screen_txtoverlay(vid_filename: str, tar_langcode: str, processed_docname: s
 	with open(filters_path, "w", encoding="utf-8") as out:
 		out.write(",\n".join(filters))
 
+	if extracted_table_data:
+		populate_text_table(processed_docname, extracted_table_data)
+
 	try:
-		logger.info("Running subprocess command")
-		subprocess.run(
-			[
-				"ffmpeg",
-				"-y",
-				"-nostdin",
-				"i",
-				input_videopath,
-				"-filter_complex_script",
-				filters_path,
-				"-c:a",
-				"copy",
-				output_videopath,
-			],
-			check=True,
-			capture_output=True,
-			text=True,
-		)
+		if filters_path:
+			logger.info("Running subprocess command")
+			subprocess.run(
+				[
+					"ffmpeg",
+					"-y",
+					"-nostdin",
+					"-i",
+					input_videopath,
+					"-filter_complex_script",
+					filters_path,
+					"-c:a",
+					"copy",
+					output_videopath,
+				],
+				check=True,
+				capture_output=True,
+				text=True,
+			)
 	except subprocess.CalledProcessError as e:
 		logger.error(f"ffmpeg process error during onscreen text muxing: {e}")
 		frappe.throw(f"Error during onscreen text muxing: {e}")

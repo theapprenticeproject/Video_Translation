@@ -15,6 +15,8 @@
   "activity",
   "processed_on",
   "section_break_emcz",
+  "onscreen_texts",
+  "section_break_0hyu",
   "video_preview",
   "percent"
  ],
@@ -87,12 +89,22 @@
   {
    "fieldname": "column_break_vylp",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "onscreen_texts",
+   "fieldtype": "Table",
+   "label": "Onscreen Texts",
+   "options": "Onscreen Text Timestamp"
+  },
+  {
+   "fieldname": "section_break_0hyu",
+   "fieldtype": "Section Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-21 10:27:09.201888",
+ "modified": "2026-03-23 10:16:01.395887",
  "modified_by": "sysadm@proton.com",
  "module": "self-app",
  "name": "Processed Video Info",
