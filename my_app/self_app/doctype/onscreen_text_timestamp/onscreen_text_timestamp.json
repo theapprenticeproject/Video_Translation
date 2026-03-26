@@ -1,0 +1,65 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-03-23 10:10:08.710552",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "text",
+  "translated_text",
+  "start_time",
+  "end_time",
+  "frame_layout_data"
+ ],
+ "fields": [
+  {
+   "fieldname": "text",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Text",
+   "read_only": 1
+  },
+  {
+   "fieldname": "translated_text",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Translated Text"
+  },
+  {
+   "fieldname": "start_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Start Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "end_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "End Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "frame_layout_data",
+   "fieldtype": "JSON",
+   "hidden": 1,
+   "label": "Frame Layout Data",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-03-26 17:05:53.483259",
+ "modified_by": "Administrator",
+ "module": "self-app",
+ "name": "Onscreen Text Timestamp",
+ "owner": "sysadm@proton.com",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
