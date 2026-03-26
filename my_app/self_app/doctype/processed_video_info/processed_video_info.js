@@ -88,9 +88,28 @@ frappe.ui.form.on("Processed Video Info", {
             frm.dashboard.hide()
         }
 
-
+        
         // const childTable = frm.fields_dict["onscreen_texts"].grid;
-        const hasRows = frm.doc.onscreen_texts && frm.doc.onscreen_texts.length > 0;
+        const hasRows = frm.doc.onscreen_texts && frm.doc.onscreen_texts.length > 0 && frm.doc.status === "pending";
         frm.toggle_display("onscreen_texts", hasRows);
+        
+        if (hasRows){
+            frm.add_custom_button("Generate Onscreen Translation", ()=>{
+                frm.remove_custom_button("Generate Onscreen Translation")
+                frappe.db.get_value("Video Info", frm.doc.origin_vid_link, "target_lang").then(
+                    r => {
+                        frappe.call({
+                            method: "my_app.media-queues.tasks_pipe.onscreentxt_trigger",
+                            args:{
+                                trans_vid_info: frm.doc.localized_vid,
+                                tar_lang: r.message.target_lang,
+                                processed_docname: frm.doc.name
+                            }
+                        })
+                        console.log(frm.doc.localized_vid, r.message.target_lang)
+                    }
+                )
+            })
+        }
     },
 });

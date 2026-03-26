@@ -1,6 +1,8 @@
+import json
 import subprocess
 
 import frappe
+from frappe.utils import now_datetime
 from google.cloud import videointelligence_v1 as videointelligence
 
 from my_app.api.v1.bhashini_tasks import text_translation
@@ -16,7 +18,6 @@ VIDEO_WIDTH = 1920
 VIDEO_HEIGHT = 1080
 
 # FFMPEG FILTER CONFIG
-# FONT_PATH = "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Bold.ttf"  # for marathi
 FRAME_DURATION = 0.1
 FONT_SIZE = 48
 PADDING_X = 35
@@ -43,6 +44,7 @@ def populate_text_table(processed_docname: str, extracted_texts: list):
 					"translated_text": i["translated_text"],
 					"start_time": i["start_time"],
 					"end_time": i["end_time"],
+					"frame_layout_data": i["frame_layout_data"],
 				},
 			)
 
@@ -55,10 +57,7 @@ def populate_text_table(processed_docname: str, extracted_texts: list):
 
 
 def screen_txtoverlay(vid_filename: str, tar_langcode: str, processed_docname: str):
-	FONT_PATH = language_fonts_path.get(tar_langcode)
 	input_videopath = frappe.get_site_path("public", "files", "original", vid_filename)
-	output_videopath = frappe.get_site_path("public", "files", "processed", f"labs_sts_{vid_filename}")
-	filters_path = frappe.get_site_path("public", "files", "filter_overlay.txt")
 	with open(input_videopath, "rb") as f:
 		input_content = f.read()
 
@@ -74,7 +73,6 @@ def screen_txtoverlay(vid_filename: str, tar_langcode: str, processed_docname: s
 	logger.info("Analysis complete. Generating FFmpeg filters...")
 
 	# PARSE JSON & GENERATE FILTERS DIRECTLY
-	filters = []
 	extracted_table_data = []
 	annotation_result = result.annotation_results[0]
 
@@ -98,15 +96,7 @@ def screen_txtoverlay(vid_filename: str, tar_langcode: str, processed_docname: s
 
 			seg_start = segment.frames[0].time_offset.total_seconds()
 			seg_end = segment.frames[-1].time_offset.total_seconds() + FRAME_DURATION
-			extracted_table_data.append(
-				{
-					"text": original_text,
-					"translated_text": translated_text,
-					"start_time": seg_start,
-					"end_time": seg_end,
-				}
-			)
-
+			frame_data_list = []
 			for frame in segment.frames:
 				start_time = frame.time_offset.total_seconds()
 				end_time = start_time + FRAME_DURATION
@@ -128,21 +118,54 @@ def screen_txtoverlay(vid_filename: str, tar_langcode: str, processed_docname: s
 				bw = width_px + (PADDING_X * 2)
 				bh = height_px + (PADDING_Y * 2)
 
-				# Drawbox filter
-				box_cmd = f"drawbox=x={bx}:y={by}:w={bw}:h={bh}:color=white@1.0:t=fill:enable='between(t,{start_time:.2f},{end_time:.2f})'"
+				frame_data_list.append(
+					{"start": start_time, "end": end_time, "bx": bx, "by": by, "bw": bw, "bh": bh}
+				)
 
-				# Drawtext filter (Auto-centered)
-				txt_x = f"{bx}+({bw}-tw)/2"
-				txt_y = f"{by}+({bh}-th)/2"
-				txt_cmd = f"drawtext=fontfile='{FONT_PATH}':text='{translated_text}':x={txt_x}:y={txt_y}:fontsize={FONT_SIZE}:fontcolor=black:enable='between(t,{start_time:.2f},{end_time:.2f})'"
-
-				filters.extend([box_cmd, txt_cmd])
-
-	with open(filters_path, "w", encoding="utf-8") as out:
-		out.write(",\n".join(filters))
+			extracted_table_data.append(
+				{
+					"text": original_text,
+					"translated_text": translated_text,
+					"start_time": seg_start,
+					"end_time": seg_end,
+					"frame_layout_data": json.dumps(frame_data_list),
+				}
+			)
 
 	if extracted_table_data:
 		populate_text_table(processed_docname, extracted_table_data)
+
+
+def apply_onscreentext(vid_filename: str, processed_docname: str, tar_langcode: str):
+	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
+	FONT_PATH = language_fonts_path.get(tar_langcode)
+	input_videopath = frappe.get_site_path("public", "files", "processed", vid_filename)
+	output_videopath = frappe.get_site_path("public", "files", f"onscreen_{vid_filename}")
+	logger.info(output_videopath)
+	filter_name = (f"filters_{vid_filename}").replace("mp4", "txt")
+	filters_path = frappe.get_site_path("public", "files", filter_name)
+	logger.info(f"filters path: {filters_path}")
+	filters = []
+	for row in processed_doc.onscreen_texts:
+		final_text = row.translated_text
+		if not final_text:
+			continue
+		frame_data_list = json.loads(row.frame_layout_data)
+		for frame in frame_data_list:
+			bx, by, bw, bh = frame["bx"], frame["by"], frame["bw"], frame["bh"]
+			st, et = frame["start"], frame["end"]
+
+			# Drawbox filter
+			box_cmd = f"drawbox=x={bx}:y={by}:w={bw}:h={bh}:color=white@1.0:t=fill:enable='between(t,{st:.2f},{et:.2f})'"
+
+			# Drawtext filter (Auto-centered)
+			txt_x = f"{bx}+({bw}-tw)/2"
+			txt_y = f"{by}+({bh}-th)/2"
+			txt_cmd = f"drawtext=fontfile='{FONT_PATH}':text='{final_text}':x={txt_x}:y={txt_y}:fontsize={FONT_SIZE}:fontcolor=black:enable='between(t,{st:.2f},{et:.2f})'"
+
+			filters.extend([box_cmd, txt_cmd])
+	with open(filters_path, "w", encoding="utf-8") as out:
+		out.write(",\n".join(filters))
 
 	try:
 		if filters_path:
@@ -164,9 +187,13 @@ def screen_txtoverlay(vid_filename: str, tar_langcode: str, processed_docname: s
 				capture_output=True,
 				text=True,
 			)
+			processed_doc.localized_vid = f"/files/onscreen_{vid_filename}"
+			processed_doc.activity = "Onscreen text translation Completed"
+			processed_doc.status = "success"
+			processed_doc.percent = 100
+			processed_doc.processed_on = now_datetime()
+			processed_doc.save(ignore_permissions=True)
+			frappe.db.commit()
 	except subprocess.CalledProcessError as e:
 		logger.error(f"ffmpeg process error during onscreen text muxing: {e}")
 		frappe.throw(f"Error during onscreen text muxing: {e}")
-
-
-logger.info("Pipeline finished generated.")
