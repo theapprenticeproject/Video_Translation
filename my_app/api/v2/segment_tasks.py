@@ -26,7 +26,7 @@ def stt_chunks(audio_filename: str):
 	return big_chunks
 
 
-def merge_segments(segments, total_duration, num_chunks=3):
+def merge_segments(segments, total_duration, num_chunks=2):
 	target_duration = total_duration / num_chunks
 	merged = []
 

@@ -188,7 +188,7 @@ def text_translation(text, target_langcode: str, processed_docname: str):
 		response_list = response.json()["pipelineResponse"][0]["output"]
 		translated_text_list = [item["target"] for item in response_list]
 		processed_doc.activity = f"Text translated into {target_langcode}"
-		processed_doc.percent = 50
+		processed_doc.percent = 40
 		processed_doc.save(ignore_permissions=True)
 		frappe.db.commit()
 
