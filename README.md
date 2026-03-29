@@ -15,10 +15,10 @@
 * Localizes videos into multiple Indic languages.
 * Built on the **Frappe framework** with background queues to handle concurrent uploads.
 * Supports translated subtitles for all outputs.
+* Automates video onscreen text translation into desired Indic languages.
 * Enables educators to create profiles and translate video content with a single button click.
 * Generates all components of a localized video — subtitles, translated audio, and more.
 * Provides versioned APIs for easier pipeline extension.
-* Uses **uv** for fast and reliable package & dependency management.
 
 ## 📑 Documentation
 Full setup guides, architecture, API Flows, etc., are available in the **[Gitbook Documentation ↗](https://theapprenticeproject.gitbook.io/ai-video-localization/RbOX32eTbHDcOMXmXgoF/)**.
