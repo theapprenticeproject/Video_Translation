@@ -91,13 +91,13 @@ frappe.ui.form.on("Processed Video Info", {
 
         // const childTable = frm.fields_dict["onscreen_texts"].grid;
 
-        const hideCondition = frm.doc.onscreen_texts && frm.doc.onscreen_texts.length > 0 && frm.doc.status === "pending" && frm.doc.activity === "Translating Onscreen Text";
-        frm.toggle_display("onscreen_texts", hideCondition);
+        const showCondition = frm.doc.onscreen_texts && frm.doc.onscreen_texts.length > 0 && frm.doc.status === "pending" && frm.doc.activity==="Subtitle added to translated video";
+        frm.toggle_display("onscreen_texts", showCondition);
 
-        if (hideCondition) {
+        if (showCondition) {
             let btn = frm.add_custom_button("Generate Onscreen Translation", () => {
                 frm.remove_custom_button("Generate Onscreen Translation")
-                frappe.db.set_value("Processed Video Info", frm.doc.name, "activtiy", "Translating Onscreen Text").then(() => {
+                frappe.db.set_value("Processed Video Info", frm.doc.name, "activity", "Translating Onscreen Text").then(() => {
                     frappe.db.get_value("Video Info", frm.doc.origin_vid_link, "target_lang").then(
                         r => {
                             frappe.call({
