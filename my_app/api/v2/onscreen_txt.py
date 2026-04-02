@@ -53,7 +53,7 @@ def populate_text_table(processed_docname: str, extracted_texts: list):
 		logger.info("Successfully populated onscreen text table ")
 	except Exception as e:
 		logger.error("Error populating onscreen text table", e)
-		frappe.throw("Failed to populate onscreen text table: ", e)
+		frappe.throw(f"Failed to populate onscreen text table: {e}")
 
 
 def screen_txtoverlay(vid_filename: str, tar_langcode: str, processed_docname: str):
@@ -95,11 +95,17 @@ def screen_txtoverlay(vid_filename: str, tar_langcode: str, processed_docname: s
 				continue
 
 			seg_start = segment.frames[0].time_offset.total_seconds()
-			seg_end = segment.frames[-1].time_offset.total_seconds() + FRAME_DURATION
+
 			frame_data_list = []
+
+			# TRACKING VARIABLES FOR GROUPING
+			current_box_params = None
+			group_start_time = 0.0
+			group_end_time = 0.0
+
 			for frame in segment.frames:
-				start_time = frame.time_offset.total_seconds()
-				end_time = start_time + FRAME_DURATION
+				frame_start_time = frame.time_offset.total_seconds()
+				frame_end_time = frame_start_time + FRAME_DURATION
 
 				box = frame.rotated_bounding_box.vertices
 
@@ -112,15 +118,61 @@ def screen_txtoverlay(vid_filename: str, tar_langcode: str, processed_docname: s
 				width_px = int((max(xs) - min(xs)) * VIDEO_WIDTH)
 				height_px = int((max(ys) - min(ys)) * VIDEO_HEIGHT)
 
-				# Apply padding for FFmpeg
+				# Apply padding
 				bx = x_min_px - PADDING_X
 				by = y_min_px - PADDING_Y
 				bw = width_px + (PADDING_X * 2)
 				bh = height_px + (PADDING_Y * 2)
 
+				new_box_params = (bx, by, bw, bh)
+
+				if current_box_params is None:
+					# First frame in the segment
+					current_box_params = new_box_params
+					group_start_time = frame_start_time
+					group_end_time = frame_end_time
+				elif current_box_params == new_box_params and abs(frame_start_time - group_end_time) < 0.05:
+					# Same coordinates AND consecutive timeframe
+					group_end_time = frame_end_time
+				else:
+					# Box moved or time gap, save the previous group to list
+					bx_c, by_c, bw_c, bh_c = current_box_params
+					frame_data_list.append(
+						{
+							"start": group_start_time,
+							"end": group_end_time,
+							"bx": bx_c,
+							"by": by_c,
+							"bw": bw_c,
+							"bh": bh_c,
+						}
+					)
+
+					# Start tracking the new group
+					current_box_params = new_box_params
+					group_start_time = frame_start_time
+					group_end_time = frame_end_time
+
+			# FLUSH THE FINAL GROUP
+			if current_box_params is not None:
+				bx_c, by_c, bw_c, bh_c = current_box_params
 				frame_data_list.append(
-					{"start": start_time, "end": end_time, "bx": bx, "by": by, "bw": bw, "bh": bh}
+					{
+						"start": group_start_time,
+						"end": group_end_time,
+						"bx": bx_c,
+						"by": by_c,
+						"bw": bw_c,
+						"bh": bh_c,
+					}
 				)
+
+			# Define exact seg_end based on the last tracked group for accuracy
+			seg_end = (
+				group_end_time
+				if current_box_params
+				else segment.frames[-1].time_offset.total_seconds() + FRAME_DURATION
+			)
 
 			extracted_table_data.append(
 				{
@@ -145,12 +197,16 @@ def apply_onscreentext(vid_filename: str, processed_docname: str, tar_langcode: 
 	filter_name = (f"filters_{vid_filename}").replace("mp4", "txt")
 	filters_path = frappe.get_site_path("public", "files", filter_name)
 	logger.info(f"filters path: {filters_path}")
+
 	filters = []
+
 	for row in processed_doc.onscreen_texts:
 		final_text = row.translated_text
 		if not final_text:
 			continue
+
 		frame_data_list = json.loads(row.frame_layout_data)
+
 		for frame in frame_data_list:
 			bx, by, bw, bh = frame["bx"], frame["by"], frame["bw"], frame["bh"]
 			st, et = frame["start"], frame["end"]
@@ -164,6 +220,7 @@ def apply_onscreentext(vid_filename: str, processed_docname: str, tar_langcode: 
 			txt_cmd = f"drawtext=fontfile='{FONT_PATH}':text='{final_text}':x={txt_x}:y={txt_y}:fontsize={FONT_SIZE}:fontcolor=black:enable='between(t,{st:.2f},{et:.2f})'"
 
 			filters.extend([box_cmd, txt_cmd])
+
 	with open(filters_path, "w", encoding="utf-8") as out:
 		out.write(",\n".join(filters))
 
