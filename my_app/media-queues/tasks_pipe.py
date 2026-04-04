@@ -13,7 +13,7 @@ from my_app.api.v2.onscreen_txt import apply_onscreentext, screen_txtoverlay
 from my_app.api.v2.segment_tasks import segment_main
 from my_app.helper.options import normalize_keyterms, sanitize_pro_dicts
 
-languages = {"Marathi": "mr", "Punjabi": "pa"}
+languages = {"Marathi": "mr", "Punjabi": "pa", "Hindi": "hi"}
 
 
 @frappe.whitelist()

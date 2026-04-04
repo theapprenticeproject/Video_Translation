@@ -26,6 +26,7 @@ PADDING_Y = 20
 EXCLUDE_WORDS = ["THE APPRENTICE PROJECT"]
 translation_cache = {}
 language_fonts_path = {
+	"hi": "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Bold.ttf",
 	"mr": "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Bold.ttf",
 	"pa": "/usr/share/fonts/truetype/noto/NotoSansGurmukhi-Bold.ttf",
 }
