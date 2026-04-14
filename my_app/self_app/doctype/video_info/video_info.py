@@ -7,11 +7,17 @@ import frappe
 from frappe.model.document import Document
 
 from my_app.helper.file_naming import file_retitling
+from my_app.helper.videolink_download import resolve_input_link
 
 
 class VideoInfo(Document):
 	def on_update(self):
-		if self.original_vid and not self.original_audio_extracted and "original/" not in self.original_vid:
+		if (
+			self.original_vid
+			and not self.original_audio_extracted
+			and "original/" not in self.original_vid
+			and not self.original_vid.startswith("http")
+		):
 			try:
 				num_name = self.name.replace(self.title + "-", "")
 
@@ -31,6 +37,16 @@ class VideoInfo(Document):
 
 			except Exception as e:
 				frappe.throw(f"Error updating video info process: {e}")
+		elif self.original_vid.startswith("http"):
+			file_url_path = resolve_input_link(self.original_vid)
+			self.db_set("original_vid", file_url_path, commit=True)
+			frappe.publish_realtime(
+				event="video_file_structured",
+				message={
+					"videofile_url": file_url_path,
+					"video_info_docname": self.name,
+				},
+			)
 
 	def on_trash(self):
 		# Delete original video file
@@ -56,3 +72,27 @@ class VideoInfo(Document):
 					frappe.msgprint(
 						f"Warning: Could not delete audio file {self.original_audio_extracted}", alert=True
 					)
+
+	def validate(self):
+		self.handle_quick_entry_video_link()
+
+	def handle_quick_entry_video_link(self):
+		video_url = self.original_vid
+
+		if video_url and video_url.startswith(("http://", "https://")):
+			# Check if this URL already exists in the File doctype
+			if not frappe.db.exists("File", {"file_url": video_url}):
+				new_file = frappe.new_doc("File")
+				new_file.update(
+					{
+						"file_url": video_url,
+						"attached_to_doctype": self.doctype,
+						"is_private": 0,  # Set to 1 if these need to be private files
+					}
+				)
+
+				# Attach to this specific document if it already has a name
+				if self.name:
+					new_file.attached_to_name = self.name
+
+				new_file.insert(ignore_permissions=True)
