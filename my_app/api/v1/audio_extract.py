@@ -56,5 +56,7 @@ def audio_extraction(videofile: str):
 @frappe.whitelist()
 def trigger_audio_extract(videofile_url: str):
 	frappe.enqueue(
-		method="my_app.api.v1.audio_extract.audio_extraction", queue="short", videofile=videofile_url
+		method="my_app.api.v1.audio_extract.audio_extraction",
+		queue="short",
+		videofile=videofile_url,
 	)

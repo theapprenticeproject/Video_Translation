@@ -19,17 +19,14 @@ const add_view_processed_button = (frm) => {
     });
 }
 
-video_info_docname = ""
 frappe.ui.form.on("Video Info", {
     onload: (frm) => {
-        // Listen for video file renaming completion
+        // Listen for video file renaming/structuring completion
         frappe.realtime.on("video_file_structured", (data) => {
             if (frm.doc.original_vid !== data.videofile_url) {
                 frm.set_value("original_vid", data.videofile_url).then(() => {
                     frm.refresh_field("original_vid");
                     frappe.show_alert({ message: __("Video Uploaded and Structured"), indicator: "green" }, 3);
-                    video_info_docname = data.video_info_docname
-                    // setTimeout(() => { }, 750);
                 });
             } else {
                 console.log("Video path already set correctly, skipped");
@@ -42,11 +39,10 @@ frappe.ui.form.on("Video Info", {
             await frm.set_value("original_audio_extracted", data.audiofile_url);
             await frm.save();
             frappe.show_alert({ message: __("Audio extracted"), indicator: "green" }, 3);
-            // setTimeout(() => { }, 1500);
             frm.call({
                 method: "my_app.media-queues.tasks_pipe.trigger_pipeline",
                 args: {
-                    video_info_docname: video_info_docname,
+                    video_info_docname: frm.doc.name,
                     audio_filename: data.audio_filename,
                     video_filename: data.video_filename
                 },
@@ -59,7 +55,7 @@ frappe.ui.form.on("Video Info", {
     },
 
     refresh: (frm) => {
-        if (frm.doc.original_vid && !frm.doc.original_audio_extracted) {
+        if (!frm.is_new() && frm.doc.original_vid && !frm.doc.original_audio_extracted) {
             let btn = frm.add_custom_button("Start Process", () => {
                 frm.clear_custom_buttons();
                 frappe.show_alert("Starting video processing...", "orange");
@@ -67,7 +63,7 @@ frappe.ui.form.on("Video Info", {
                 frappe.call({
                     method: "my_app.api.v1.audio_extract.trigger_audio_extract",
                     args: {
-                        videofile_url: frm.doc.original_vid
+                        videofile_url: frm.doc.original_vid,
                     },
                 });
             });
