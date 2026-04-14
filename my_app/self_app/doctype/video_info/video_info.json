@@ -7,14 +7,13 @@
  "engine": "InnoDB",
  "field_order": [
   "title",
-  "educator",
+  "educator_name",
   "target_lang",
   "column_break_sjod",
-  "original_vid",
+  "original_audio_extracted",
   "processed_status",
   "section_break_twg4",
-  "original_audio_extracted",
-  "created_on"
+  "original_vid"
  ],
  "fields": [
   {
@@ -22,14 +21,6 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Title",
-   "reqd": 1
-  },
-  {
-   "fieldname": "educator",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Educator",
-   "options": "Educator Profile",
    "reqd": 1
   },
   {
@@ -63,23 +54,24 @@
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "created_on",
-   "fieldtype": "Datetime",
-   "label": "Created On"
-  },
-  {
    "fetch_from": "processed_vid_link.status",
    "fieldname": "processed_status",
    "fieldtype": "Data",
    "hidden": 1,
    "label": "Processed Status",
    "read_only": 1
+  },
+  {
+   "fieldname": "educator_name",
+   "fieldtype": "Data",
+   "label": "Educator Name",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-24 23:19:28.855713",
+ "modified": "2026-04-13 20:07:55.714329",
  "modified_by": "sysadm@proton.com",
  "module": "self-app",
  "name": "Video Info",
