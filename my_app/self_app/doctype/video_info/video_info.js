@@ -43,7 +43,6 @@ frappe.ui.form.on("Video Info", {
                 method: "my_app.media-queues.tasks_pipe.trigger_pipeline",
                 args: {
                     video_info_docname: frm.doc.name,
-                    audio_filename: data.audio_filename,
                     video_filename: data.video_filename
                 },
                 callback: () => {

@@ -17,35 +17,14 @@ languages = {"Marathi": "mr", "Punjabi": "pa", "Hindi": "hi"}
 
 
 @frappe.whitelist()
-def trigger_pipeline(video_info_docname: str, audio_filename: str, video_filename: str):
+def trigger_pipeline(video_info_docname: str, video_filename: str):
 	processed_doc = frappe.new_doc("Processed Video Info")
 	processed_doc.origin_vid_link = video_info_docname
 	processed_doc.status = "pending"
 	processed_doc.processed_on = frappe.utils.now()
 	processed_doc.insert(ignore_permissions=True)
 	frappe.db.commit()
-	frappe.enqueue(
-		method="my_app.media-queues.tasks_pipe.language_detection",
-		queue="default",
-		audio_filename=audio_filename,
-		processed_docname=processed_doc.name,
-		video_filename=video_filename,
-		user=frappe.session.user,
-	)
-
-
-def language_detection(audio_filename: str, processed_docname: str, video_filename: str, user: str):
-	src_language = lang_detection(audio_filename, processed_docname)
-	frappe.get_doc(
-		{
-			"doctype": "Notification Log",
-			"for_user": user,
-			"subject": "Language Detection",
-			"email_content": f"Source language Detected: {src_language}",
-			"type": "Alert",
-		}
-	).insert(ignore_permissions=True)
-	docname = frappe.get_value("Video Info", {"original_vid": ["like", f"%{video_filename}%"]})
+	docname=frappe.get_value("Video Info", {"original_vid": ["like", f"%{video_filename}%"]})
 	if docname:
 		original_doc = frappe.get_doc("Video Info", docname)
 		target_language = original_doc.target_lang
@@ -54,8 +33,8 @@ def language_detection(audio_filename: str, processed_docname: str, video_filena
 				method="my_app.media-queues.tasks_pipe.hindi_dubbing",
 				queue="long",
 				video_filename=video_filename,
-				processed_docname=processed_docname,
-				user=user,
+				processed_docname=processed_doc.name,
+				user=frappe.session.clear,
 			)
 		else:
 			# bhashini API services for non-hindi translations
@@ -77,46 +56,93 @@ def language_detection(audio_filename: str, processed_docname: str, video_filena
 				queue="long",
 				video_filename=video_filename,
 				tar_lang_code=tar_langcode,
-				processed_docname=processed_docname,
-				user=user,
+				processed_docname=processed_doc.name,
+				user=frappe.session.user,
 			)
 
+# def language_detection(audio_filename: str, processed_docname: str, video_filename: str, user: str):
+# 	src_language = lang_detection(audio_filename, processed_docname)
+# 	frappe.get_doc(
+# 		{
+# 			"doctype": "Notification Log",
+# 			"for_user": user,
+# 			"subject": "Language Detection",
+# 			"email_content": f"Source language Detected: {src_language}",
+# 			"type": "Alert",
+# 		}
+# 	).insert(ignore_permissions=True)
+# 	docname = frappe.get_value("Video Info", {"original_vid": ["like", f"%{video_filename}%"]})
+# 	if docname:
+# 		original_doc = frappe.get_doc("Video Info", docname)
+# 		target_language = original_doc.target_lang
+# 		if target_language == "Hindi":
+# 			frappe.enqueue(
+# 				method="my_app.media-queues.tasks_pipe.hindi_dubbing",
+# 				queue="long",
+# 				video_filename=video_filename,
+# 				processed_docname=processed_docname,
+# 				user=user,
+# 			)
+# 		else:
+# 			# bhashini API services for non-hindi translations
+# 			# frappe.enqueue(
+# 			# 	method="my_app.media-queues.tasks_pipe.sts_translation",
+# 			# 	queue="long",
+# 			# 	video_filename=video_filename,
+# 			# 	audio_filename=audio_filename,
+# 			# 	src_lang_code=src_language,
+# 			# 	tar_lang_code=target_language,
+# 			# 	processed_docname=processed_docname,
+# 			# 	user=user,
+# 			# )
 
-def sts_translation(
-	video_filename: str,
-	audio_filename: str,
-	src_lang_code: str,
-	tar_lang_code: str,
-	processed_docname: str,
-	user: str,
-):
-	processed_audio_info = STS_pipe(
-		video_filename, audio_filename, src_lang_code, tar_lang_code, processed_docname
-	)
-	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
-	processed_doc.translated_aud = processed_audio_info["audio_filepath"]
-	processed_doc.activity = "Video Translation Done - sts"
-	processed_doc.save(ignore_permissions=True)
-	frappe.db.commit()
+# 			# elevenlab service for non-hindi
+# 			tar_langcode = languages.get(target_language.strip())
+# 			frappe.enqueue(
+# 				method="my_app.media-queues.tasks_pipe.labs_sts_translation",
+# 				queue="long",
+# 				video_filename=video_filename,
+# 				tar_lang_code=tar_langcode,
+# 				processed_docname=processed_docname,
+# 				user=user,
+# 			)
 
-	frappe.get_doc(
-		{
-			"doctype": "Notification Log",
-			"for_user": user,
-			"subject": "Translation Completed",
-			"email_content": f"Translation done in {tar_lang_code}",
-			"type": "Alert",
-		}
-	).insert(ignore_permissions=True)
 
-	frappe.enqueue(
-		method="my_app.media-queues.tasks_pipe.get_subtitles",
-		queue="short",
-		audio_filename=processed_audio_info["audio_filename"],
-		lang_code=processed_audio_info["tar_lang_code"],
-		processed_docname=processed_docname,
-		user=user,
-	)
+# def sts_translation(
+# 	video_filename: str,
+# 	audio_filename: str,
+# 	src_lang_code: str,
+# 	tar_lang_code: str,
+# 	processed_docname: str,
+# 	user: str,
+# ):
+# 	processed_audio_info = STS_pipe(
+# 		video_filename, audio_filename, src_lang_code, tar_lang_code, processed_docname
+# 	)
+# 	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
+# 	processed_doc.translated_aud = processed_audio_info["audio_filepath"]
+# 	processed_doc.activity = "Video Translation Done - sts"
+# 	processed_doc.save(ignore_permissions=True)
+# 	frappe.db.commit()
+
+# 	frappe.get_doc(
+# 		{
+# 			"doctype": "Notification Log",
+# 			"for_user": user,
+# 			"subject": "Translation Completed",
+# 			"email_content": f"Translation done in {tar_lang_code}",
+# 			"type": "Alert",
+# 		}
+# 	).insert(ignore_permissions=True)
+
+# 	frappe.enqueue(
+# 		method="my_app.media-queues.tasks_pipe.get_subtitles",
+# 		queue="short",
+# 		audio_filename=processed_audio_info["audio_filename"],
+# 		lang_code=processed_audio_info["tar_lang_code"],
+# 		processed_docname=processed_docname,
+# 		user=user,
+# 	)
 
 
 @frappe.whitelist()
@@ -196,7 +222,7 @@ def labs_sts_translation(
 	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
 	processed_doc.translated_aud = processed_audio_info["audio_filepath"]
 	processed_doc.activity = "Video Translation done - ElevenLabs STS"
-	processed_doc.percent = 75
+	processed_doc.percent = 60
 	processed_doc.save(ignore_permissions=True)
 	frappe.db.commit()
 
