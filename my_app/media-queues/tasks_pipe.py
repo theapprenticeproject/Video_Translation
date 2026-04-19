@@ -5,10 +5,11 @@ import json
 import frappe
 
 from my_app.api.v1.audio_extract import audio_extraction
-from my_app.api.v1.bhashini_tasks import STS_pipe, lang_detection
+
+# from my_app.api.v1.bhashini_tasks import STS_pipe, lang_detection
 from my_app.api.v1.subtitle import vtt_generate
 from my_app.api.v2.dub_labs import dubbing
-from my_app.api.v2.elevenlabs_tasks import speech_to_text
+from my_app.api.v2.elevenlabs_tasks import speech_to_text, text_to_speech
 from my_app.api.v2.onscreen_txt import apply_onscreentext, screen_txtoverlay
 from my_app.api.v2.segment_tasks import segment_main
 from my_app.helper.options import normalize_keyterms, sanitize_pro_dicts
@@ -24,7 +25,7 @@ def trigger_pipeline(video_info_docname: str, video_filename: str):
 	processed_doc.processed_on = frappe.utils.now()
 	processed_doc.insert(ignore_permissions=True)
 	frappe.db.commit()
-	docname=frappe.get_value("Video Info", {"original_vid": ["like", f"%{video_filename}%"]})
+	docname = frappe.get_value("Video Info", {"original_vid": ["like", f"%{video_filename}%"]})
 	if docname:
 		original_doc = frappe.get_doc("Video Info", docname)
 		target_language = original_doc.target_lang
@@ -59,6 +60,7 @@ def trigger_pipeline(video_info_docname: str, video_filename: str):
 				processed_docname=processed_doc.name,
 				user=frappe.session.user,
 			)
+
 
 # def language_detection(audio_filename: str, processed_docname: str, video_filename: str, user: str):
 # 	src_language = lang_detection(audio_filename, processed_docname)
@@ -216,25 +218,56 @@ def labs_sts_translation(
 	key_terms: list[str] | None = None,
 	pro_dicts: dict[str, str] | None = None,
 ):
-	processed_audio_info = speech_to_text(
-		tar_lang_code, video_filename, processed_docname, key_terms, pro_dicts
-	)
-	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
-	processed_doc.translated_aud = processed_audio_info["audio_filepath"]
-	processed_doc.activity = "Video Translation done - ElevenLabs STS"
-	processed_doc.percent = 60
-	processed_doc.save(ignore_permissions=True)
-	frappe.db.commit()
+	speech_to_text(tar_lang_code, video_filename, processed_docname, key_terms, pro_dicts)
+	# processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
+	# processed_doc.translated_aud = processed_audio_info["audio_filepath"]
+	# processed_doc.activity = "Video Translation done - ElevenLabs STS"
+	# processed_doc.percent = 60
+	# processed_doc.save(ignore_permissions=True)
+	# frappe.db.commit()
 
 	frappe.get_doc(
 		{
 			"doctype": "Notification Log",
 			"for_user": user,
 			"subject": "Translation Completed",
-			"email_content": f"Translation done in {tar_lang_code}",
+			"email_content": f"Text Translation done in {tar_lang_code}",
 			"type": "Alert",
 		}
 	).insert(ignore_permissions=True)
+
+	# frappe.enqueue(
+	# 	method="my_app.media-queues.tasks_pipe.on_screen_txt_translation",
+	# 	queue="long",
+	# 	vid_filename=video_filename,
+	# 	audio_filename=processed_audio_info["audio_filename"],
+	# 	lang_code=tar_lang_code,
+	# 	processed_docname=processed_docname,
+	# 	user=user,
+	# )
+
+
+@frappe.whitelist()
+def speech_trigger(vid_filename: str, tar_lang: str, processed_docname: str):
+	lang_code=languages.get(tar_lang.strip())
+	trans_vid_filename=vid_filename.replace("/files/original", "").split("/")[1]
+	frappe.enqueue(
+		method="my_app.media-queues.tasks_pipe.speech_generate",
+		queue="long",
+		video_filename=trans_vid_filename,
+		tar_lang_code=lang_code,
+		processed_docname=processed_docname,
+	)
+
+
+def speech_generate(video_filename:str, tar_lang_code: str, processed_docname: str, pro_dicts: dict[str, str] | None = None):
+	processed_audio_info = text_to_speech(tar_lang_code, video_filename, processed_docname, pro_dicts)
+	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
+	processed_doc.translated_aud = processed_audio_info["audio_filepath"]
+	processed_doc.activity = "Video Translation done - ElevenLabs TTS"
+	processed_doc.percent = 65
+	processed_doc.save(ignore_permissions=True)
+	frappe.db.commit()
 
 	frappe.enqueue(
 		method="my_app.media-queues.tasks_pipe.on_screen_txt_translation",
@@ -243,8 +276,9 @@ def labs_sts_translation(
 		audio_filename=processed_audio_info["audio_filename"],
 		lang_code=tar_lang_code,
 		processed_docname=processed_docname,
-		user=user,
+		user=frappe.session.user,
 	)
+
 
 
 def on_screen_txt_translation(
@@ -253,7 +287,7 @@ def on_screen_txt_translation(
 	screen_txtoverlay(vid_filename, lang_code, processed_docname)
 
 	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
-	processed_doc.activity = "Video Translation done - ElevenLabs STS"
+	processed_doc.activity = "Video Onscreen Text Translation Generated"
 	processed_doc.percent = 85
 	processed_doc.save(ignore_permissions=True)
 	frappe.db.commit()

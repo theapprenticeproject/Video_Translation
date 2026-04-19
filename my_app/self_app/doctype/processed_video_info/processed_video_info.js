@@ -89,12 +89,10 @@ frappe.ui.form.on("Processed Video Info", {
         }
 
 
-        // const childTable = frm.fields_dict["onscreen_texts"].grid;
+        const showOnscreentxtCondition = frm.doc.onscreen_texts && frm.doc.onscreen_texts.length > 0 && frm.doc.status === "pending" && frm.doc.activity === "Subtitle added to translated video";
+        frm.toggle_display("onscreen_texts", showOnscreentxtCondition);
 
-        const showCondition = frm.doc.onscreen_texts && frm.doc.onscreen_texts.length > 0 && frm.doc.status === "pending" && frm.doc.activity==="Subtitle added to translated video";
-        frm.toggle_display("onscreen_texts", showCondition);
-
-        if (showCondition) {
+        if (showOnscreentxtCondition) {
             let btn = frm.add_custom_button("Generate Onscreen Translation", () => {
                 frm.remove_custom_button("Generate Onscreen Translation")
                 frappe.db.set_value("Processed Video Info", frm.doc.name, "activity", "Translating Onscreen Text").then(() => {
@@ -115,5 +113,27 @@ frappe.ui.form.on("Processed Video Info", {
             })
             btn.addClass("btn-blue")
         }
+
+        const showSegmenttxtCondition = frm.doc.translated_segments && frm.doc.translated_segments.length > 0 && frm.doc.status === "pending" && frm.doc.activity === "Audio Transcript Translation Completed"
+        frm.toggle_display("translated_segments", showSegmenttxtCondition)
+        if (showSegmenttxtCondition) {
+            let btn = frm.add_custom_button("Generate Speech", () => {
+                frm.remove_custom_button("Generate Speech")
+                frappe.db.get_value("Video Info", frm.doc.origin_vid_link, ["target_lang", "original_vid"]).then(
+                    r => {
+                        frappe.call({
+                            method: "my_app.media-queues.tasks_pipe.speech_trigger",
+                            args: {
+                                vid_filename: r.message.original_vid,
+                                tar_lang: r.message.target_lang,
+                                processed_docname: frm.doc.name
+                            }
+                        })
+                    }
+                )
+            })
+            btn.addClass("btn-blue")
+        }
+
     },
 });

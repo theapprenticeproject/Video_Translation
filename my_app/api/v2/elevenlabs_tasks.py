@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess
 
@@ -15,6 +16,35 @@ logger = frappe.logger("labsts")
 """Speech to text supports both video & audio upload for transcription"""
 
 
+def populate_segments_table(segments_data: dict, tar_lang_code: str, processed_docname: str):
+	try:
+		processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
+		if segments_data:
+			segments = segments_data.get("segments")
+			source_texts = [seg["text"] for seg in segments]
+			translated_texts = text_translation(source_texts, tar_lang_code, processed_docname)
+			processed_doc.reload()
+			logger.info("Received translated text from bhashini:")
+			processed_doc.set("translated_segments", [])
+			for segment, trans_text in zip(segments, translated_texts, strict=True):
+				processed_doc.append(
+					"translated_segments",
+					{
+						"text": segment["text"],
+						"translated_text": trans_text,
+						"start_time": segment["words"][0]["start"],
+						"end_time": segment["words"][-1]["end"],
+					},
+				)
+		processed_doc.activity = "Audio Transcript Translation Completed"
+		processed_doc.percent = 45
+		processed_doc.save(ignore_permissions=True)
+		frappe.db.commit()
+	except Exception as e:
+		logger.error("Error populating text segments table", e)
+		frappe.throw(f"Failed to populate text segments table: {e}")
+
+
 def speech_to_text(
 	tar_lang_code, vid_filename: str, processed_docname: str, key_terms: list[str], pro_dicts: dict[str, str]
 ):
@@ -25,41 +55,27 @@ def speech_to_text(
 				file=audio_file, model_id="scribe_v2", keyterms=key_terms
 			)
 		else:
-			response = labs_client.speech_to_text.convert(file=audio_file, model_id="scribe_v2")
+			response = labs_client.speech_to_text.convert(
+				file=audio_file,
+				model_id="scribe_v2",
+				diarize=True,
+				additional_formats=[{"format": "segmented_json", "max_segment_chars": 84}],
+			)
 
-	transcript = response.text
 	logger.info(f"Received response from STT: {response}")
-	translated_text = text_translation(transcript, tar_lang_code, processed_docname)
-	logger.info(f"Received translated text from bhashini: {translated_text}")
-	# translated_text = text_translate(transcript, tar_lang_code)
-	# logger.info(f"Received translated text from groq: {translated_text}")
-	tts_response = text_to_speech(translated_text, tar_lang_code, vid_filename, processed_docname, pro_dicts)
-	return tts_response
+	segments_data = json.loads(response.additional_formats[0].content)
+	populate_segments_table(segments_data, tar_lang_code, processed_docname)
+	# tts_response = text_to_speech(translated_text, tar_lang_code, vid_filename, processed_docname, pro_dicts)
+	# return tts_response
 
 
-# def text_translate(text: str, lang_code):
-# 	logger.info("Inside text_translate fn with lang", lang_code)
-# 	language=str(lang_code)
-# 	system_prompt = """You are a Professional Translator. Translate the user's text to the specified language accurately. Do not add any extra elements, notes, or explanations. Just return translated text only."""
-# 	user_prompt = f"Translate the following text into {language}:\n {text}"
-# 	logger.info(user_prompt)
-# 	logger.info("Calling groq for text translation")
-# 	response = groq_client.chat.completions.create(
-# 		messages=[
-# 			{"role": "system", "content": system_prompt},
-# 			{"role": "user", "content": user_prompt},
-# 		],
-# 		model="openai/gpt-oss-120b",
-# 	)
-# 	logger.info("Received response from groq")
-# 	translated_text = response.choices[0].message.content
-# 	return translated_text
-
-
-def text_to_speech(
-	text: str, langcode: str, vid_filename: str, processed_docname: str, pro_dicts: dict[str, str]
-):
+def text_to_speech(langcode: str, vid_filename: str, processed_docname: str, pro_dicts: dict[str, str]):
 	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
+	text_pieces = []
+	for i in processed_doc.get("translated_segments", []):
+		if i.translated_text:
+			text_pieces.append(i.translated_text)
+	entire_text = " ".join(text_pieces)
 	output_audio_filename = f"labs_sts_{vid_filename}".replace("mp4", "mp3")
 	output_audiopath = frappe.get_site_path("public", "files", "processed", output_audio_filename)
 	output_videopath = frappe.get_site_path("public", "files", "processed", f"labs_sts_{vid_filename}")
@@ -70,17 +86,19 @@ def text_to_speech(
 	if pro_dicts:
 		pro_dict_ids = create_pronunciation_rules(pro_dicts)
 		response = labs_client.text_to_speech.convert(
-			text=text,
+			text=entire_text,
 			voice_id=lang_voice_id,
 			model_id="eleven_v3",
 			pronunciation_dictionary_locators=[
 				PronunciationDictionaryVersionLocator(
 					pronunciation_dictionary_id=pro_dict_ids.id, version_id=pro_dict_ids.version_id
 				)
-			]
+			],
 		)
 	else:
-		response = labs_client.text_to_speech.convert(text=text, voice_id=lang_voice_id, model_id="eleven_v3")
+		response = labs_client.text_to_speech.convert(
+			text=entire_text, voice_id=lang_voice_id, model_id="eleven_v3"
+		)
 	logger.info(f"Output audiopath: {output_audiopath}")
 	logger.info(f"Response received from TTS model: {response}")
 	with open(output_audiopath, "wb") as f:
