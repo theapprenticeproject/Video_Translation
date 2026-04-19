@@ -15,6 +15,7 @@
   "activity",
   "processed_on",
   "section_break_emcz",
+  "translated_segments",
   "onscreen_texts",
   "section_break_0hyu",
   "video_preview",
@@ -93,18 +94,26 @@
   {
    "fieldname": "onscreen_texts",
    "fieldtype": "Table",
+   "hidden": 1,
    "label": "Onscreen Texts",
    "options": "Onscreen Text Timestamp"
   },
   {
    "fieldname": "section_break_0hyu",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "translated_segments",
+   "fieldtype": "Table",
+   "hidden": 1,
+   "label": "Translated Segments",
+   "options": "Translated Segment"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-23 10:16:01.395887",
+ "modified": "2026-04-20 02:59:00.328154",
  "modified_by": "sysadm@proton.com",
  "module": "self-app",
  "name": "Processed Video Info",
