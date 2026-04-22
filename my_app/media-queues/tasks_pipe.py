@@ -173,6 +173,7 @@ def retry_trigger(video_info_name: str, tar_lang: str, processed_docname: str, o
 		user=frappe.session.user,
 		key_terms=key_terms,
 		pro_dicts=pro_dicts,
+		is_retry=True,
 	)
 
 
@@ -217,14 +218,9 @@ def labs_sts_translation(
 	user: str,
 	key_terms: list[str] | None = None,
 	pro_dicts: dict[str, str] | None = None,
+	is_retry: bool = False,
 ):
-	speech_to_text(tar_lang_code, video_filename, processed_docname, key_terms, pro_dicts)
-	# processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
-	# processed_doc.translated_aud = processed_audio_info["audio_filepath"]
-	# processed_doc.activity = "Video Translation done - ElevenLabs STS"
-	# processed_doc.percent = 60
-	# processed_doc.save(ignore_permissions=True)
-	# frappe.db.commit()
+	speech_to_text(tar_lang_code, video_filename, processed_docname, key_terms)
 
 	frappe.get_doc(
 		{
@@ -236,21 +232,22 @@ def labs_sts_translation(
 		}
 	).insert(ignore_permissions=True)
 
-	# frappe.enqueue(
-	# 	method="my_app.media-queues.tasks_pipe.on_screen_txt_translation",
-	# 	queue="long",
-	# 	vid_filename=video_filename,
-	# 	audio_filename=processed_audio_info["audio_filename"],
-	# 	lang_code=tar_lang_code,
-	# 	processed_docname=processed_docname,
-	# 	user=user,
-	# )
+	if is_retry:
+		frappe.enqueue(
+			method="my_app.media-queues.tasks_pipe.speech_generate",
+			queue="long",
+			video_filename=video_filename,
+			tar_lang_code=tar_lang_code,
+			processed_docname=processed_docname,
+			pro_dicts=pro_dicts,
+			is_retry=True,
+		)
 
 
 @frappe.whitelist()
 def speech_trigger(vid_filename: str, tar_lang: str, processed_docname: str):
-	lang_code=languages.get(tar_lang.strip())
-	trans_vid_filename=vid_filename.replace("/files/original", "").split("/")[1]
+	lang_code = languages.get(tar_lang.strip())
+	trans_vid_filename = vid_filename.replace("/files/original", "").split("/")[1]
 	frappe.enqueue(
 		method="my_app.media-queues.tasks_pipe.speech_generate",
 		queue="long",
@@ -260,25 +257,39 @@ def speech_trigger(vid_filename: str, tar_lang: str, processed_docname: str):
 	)
 
 
-def speech_generate(video_filename:str, tar_lang_code: str, processed_docname: str, pro_dicts: dict[str, str] | None = None):
-	processed_audio_info = text_to_speech(tar_lang_code, video_filename, processed_docname, pro_dicts)
+def speech_generate(
+	video_filename: str,
+	tar_lang_code: str,
+	processed_docname: str,
+	pro_dicts: dict[str, str] | None = None,
+	is_retry: bool = False,
+):
+	processed_audio_info = text_to_speech(
+		tar_lang_code, video_filename, processed_docname, pro_dicts, is_retry
+	)
 	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
 	processed_doc.translated_aud = processed_audio_info["audio_filepath"]
-	processed_doc.activity = "Video Translation done - ElevenLabs TTS"
-	processed_doc.percent = 65
+
+	if is_retry:
+		processed_doc.activity = "Video Translation done - Retry Muxing Successful"
+		processed_doc.percent = 100
+	else:
+		processed_doc.activity = "Video Translation done - ElevenLabs TTS"
+		processed_doc.percent = 65
+
 	processed_doc.save(ignore_permissions=True)
 	frappe.db.commit()
 
-	frappe.enqueue(
-		method="my_app.media-queues.tasks_pipe.on_screen_txt_translation",
-		queue="long",
-		vid_filename=video_filename,
-		audio_filename=processed_audio_info["audio_filename"],
-		lang_code=tar_lang_code,
-		processed_docname=processed_docname,
-		user=frappe.session.user,
-	)
-
+	if not is_retry:
+		frappe.enqueue(
+			method="my_app.media-queues.tasks_pipe.on_screen_txt_translation",
+			queue="long",
+			vid_filename=video_filename,
+			audio_filename=processed_audio_info["audio_filename"],
+			lang_code=tar_lang_code,
+			processed_docname=processed_docname,
+			user=frappe.session.user,
+		)
 
 
 def on_screen_txt_translation(

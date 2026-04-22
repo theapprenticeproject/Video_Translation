@@ -45,9 +45,7 @@ def populate_segments_table(segments_data: dict, tar_lang_code: str, processed_d
 		frappe.throw(f"Failed to populate text segments table: {e}")
 
 
-def speech_to_text(
-	tar_lang_code, vid_filename: str, processed_docname: str, key_terms: list[str], pro_dicts: dict[str, str]
-):
+def speech_to_text(tar_lang_code, vid_filename: str, processed_docname: str, key_terms: list[str]):
 	vid_filepath = frappe.get_site_path("public", "files", "original", vid_filename)
 	with open(vid_filepath, "rb") as audio_file:
 		if key_terms:
@@ -65,11 +63,15 @@ def speech_to_text(
 	logger.info(f"Received response from STT: {response}")
 	segments_data = json.loads(response.additional_formats[0].content)
 	populate_segments_table(segments_data, tar_lang_code, processed_docname)
-	# tts_response = text_to_speech(translated_text, tar_lang_code, vid_filename, processed_docname, pro_dicts)
-	# return tts_response
 
 
-def text_to_speech(langcode: str, vid_filename: str, processed_docname: str, pro_dicts: dict[str, str]):
+def text_to_speech(
+	langcode: str,
+	vid_filename: str,
+	processed_docname: str,
+	pro_dicts: dict[str, str],
+	is_retry: bool = False,
+):
 	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
 	text_pieces = []
 	for i in processed_doc.get("translated_segments", []):
@@ -78,8 +80,13 @@ def text_to_speech(langcode: str, vid_filename: str, processed_docname: str, pro
 	entire_text = " ".join(text_pieces)
 	output_audio_filename = f"labs_sts_{vid_filename}".replace("mp4", "mp3")
 	output_audiopath = frappe.get_site_path("public", "files", "processed", output_audio_filename)
-	output_videopath = frappe.get_site_path("public", "files", "processed", f"labs_sts_{vid_filename}")
-	input_videopath = frappe.get_site_path("public", "files", "original", vid_filename)
+	if is_retry:
+		input_videopath = frappe.get_site_path("public", "files", f"onscreen_labs_sts_{vid_filename}")
+		output_videopath= frappe.get_site_path("public", "files", f"temp_retry_{vid_filename}")
+	else:
+		output_videopath = frappe.get_site_path("public", "files", "processed", f"labs_sts_{vid_filename}")
+		input_videopath = frappe.get_site_path("public", "files", "original", vid_filename)
+
 	logger.info("Calling TTS model for voice output")
 	voices = {"mr": "VT26nWaqgBmXtH6KAeQ3", "pa": "vT0wMbLG5dssaBsksrb6"}  # Vaidehi & Noor respectively
 	lang_voice_id = voices.get("mr") if langcode == "mr" else voices.get("pa")
@@ -127,8 +134,13 @@ def text_to_speech(langcode: str, vid_filename: str, processed_docname: str, pro
 				output_videopath,
 			]
 		)
+		if is_retry:
+			# Overwrite the original onscreen text video with the newly muxed audio version
+			os.replace(output_videopath, input_videopath)
+			processed_doc.localized_vid = f"/files/onscreen_labs_sts_{vid_filename}"
+		else:
+			processed_doc.localized_vid = f"/files/processed/labs_sts_{vid_filename}"
 
-		processed_doc.localized_vid = f"/files/processed/labs_sts_{vid_filename}"
 		processed_doc.save(ignore_permissions=True)
 		frappe.db.commit()
 		logger.info("Video localized after subprocess command execution")
