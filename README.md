@@ -33,11 +33,11 @@
 ## Table of Contents
 **1. [Product Overview](#1-product-overview)<br>
 2. [Technical Architecture](#2-technical-architecture)<br>
-3. [Cost Structure](#cost-structure)<br>
-4. [Installation and Deployment](#3-installation-and-deployment)<br>
-5. [Access & Credentials](#5-access-and-credentials)<br>
+3. [Cost Structure](#3-cost-structure)<br>
+4. [Installation and Deployment](#4-installation-and-deployment)<br>
+5. [Access & Credentials](#5-access-credentials)<br>
 6. [Data and Security](#6-data-and-security)<br>
-7. [Roadmap and Pending Work](#7-roadmap-and-pending-work)<br>**
+7. [Roadmap & Future Work](#7-roadmap-future-work)<br>**
 
 ---
 
@@ -242,7 +242,7 @@ For quick sanity checks during development, a simple UI is provided to test APIs
 4. Update the **Authorization** header with your API token if testing a whitelisted/protected function (see Section 5.2).
 5. Modify the request body as needed and click **Run Test**.
 6. The JSON response will be displayed directly on the page.
-
+<img width="700" alt="image" src="https://github.com/user-attachments/assets/1c08df0e-f392-4815-8527-66316bec6c09" /><br>
 > **Note:** You can add more endpoints to the testing dropdown by modifying the `www/test-video.html` file. 
 ---
 ## 5. Access & Credentials
