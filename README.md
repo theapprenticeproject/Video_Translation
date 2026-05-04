@@ -35,9 +35,9 @@
 2. [Technical Architecture](#2-technical-architecture)<br>
 3. [Cost Structure](#3-cost-structure)<br>
 4. [Installation and Deployment](#4-installation-and-deployment)<br>
-5. [Access & Credentials](#5-access-credentials)<br>
-6. [Data and Security](#6-data-and-security)<br>
-7. [Roadmap & Future Work](#7-roadmap-future-work)<br>**
+5. [Access & Credentials](#5-access--credentials)<br>
+6. [Data Flow Info](#data-flow-info)<br>
+7. [Roadmap & Future Work](#7-roadmap--future-work)<br>**
 
 ---
 
@@ -65,7 +65,9 @@
 ## 2. Technical Architecture
 
 ### 2.1 System Architecture
-[Provide a link to a high-level architectural diagram, or write a step-by-step data flow showing how a video moves from initial upload -> queue -> transcription -> translation -> synthesis -> final storage.]
+#### 2.1.1 API & Media Transformation Flow
+
+#### 2.1.2 Queue Processing Flow
 
 ### 2.2 Tech Stack
 * **Frappe** is a low-code web framework which handles server, client-side, database and other configurations altogether.
@@ -283,6 +285,89 @@ Reference: [Frappe Token Auth](https://docs.frappe.io/framework/user/en/guides/i
     "elevenlabs_api_key":"[ELEVENLABS_API_KEY]",
     }
     ```
+---
+
+## 6. Data Flow Info
+### 6.1 Entity-Relationship (ER) Diagram
+The database schema contains the application's doctypes: Video Info, Processed Video Info and other child tables. The following diagram highlights the doctype design, definitions and the relationships between them.
+
+### 6.2 Sequence Diagram
+This sequence diagram illustrates the end-to-end flow of a non-hindi localization pipeline. It maps interactions between Frappe backend, worker queues, and external API services such as ElevenLabs (TTS & STT), Bhashini (Text Translation), and Google Video Intelligence (Text Recognition). It also highlights where the automated pipeline involves human-in-the-loop (HITL) interventions, allowing users review, edit as the pipeline progress before finally synthesizing localized video files.
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User
+    participant UI as Frappe UI
+    participant Backend as Frappe DB / Backend
+    participant Worker as Redis Worker Queues
+    participant FFmpeg as FFmpeg (Local)
+    participant STT as STT API
+    participant Bhashini as Bhashini API
+    participant TTS as ElevenLabs TTS
+    participant GVI as Google Video Intel
+
+    User->>UI: Upload Video & Select Target Lang (e.g., Marathi)
+    UI->>Backend: Create "Video Info" & "Processed Video Info"
+    Backend->>Worker: Enqueue labs_sts_translation task
+
+    rect rgb(240, 248, 255)
+        Note right of Worker: Phase 1: Audio to Translated Text
+        Worker->>FFmpeg: Extract original audio
+        Worker->>STT: Request audio transcription
+        STT-->>Worker: Original text segments
+        Worker->>Bhashini: Translate text segments
+        Bhashini-->>Worker: Translated text segments
+        Worker->>Backend: Save segments to Child Table
+        Backend-->>UI: Display Translation Grid
+    end
+
+    rect rgb(255, 235, 238)
+        Note over User, Backend: HITL 1: Review Segments
+        
+        opt Optional Retry
+            User->>UI: Clicks "Retry" (adds Key Terms / Dict)
+            UI->>Backend: Trigger retry_trigger API
+            Backend->>Worker: Re-run translation task
+        end
+        
+        User->>UI: Edits segments & Clicks "Generate Speech"
+        UI->>Backend: Trigger speech_generate API
+        Backend->>Worker: Enqueue TTS task
+    end
+
+    rect rgb(240, 248, 255)
+        Note right of Worker: Phase 2: Speech, OCR & Subtitles
+        Worker->>TTS: Send text for speech generation
+        TTS-->>Worker: Translated Audio Track
+        Worker->>Backend: Save Audio URL
+        Worker->>GVI: Detect on-screen text (OCR)
+        GVI-->>Worker: Video text timestamps
+        Worker->>Bhashini: Translate OCR text
+        Bhashini-->>Worker: Translated on-screen text
+        Worker->>Backend: Save to Onscreen Text Child Table
+        
+        %% Subtitles generated here based on code
+        Worker->>Worker: Generate Subtitles (VTT file)
+        Backend-->>UI: Display Onscreen Text Grid
+    end
+
+    rect rgb(255, 235, 238)
+        Note over User, Backend: HITL 2: Review Onscreen Text
+        User->>UI: Edits onscreen text translations
+        User->>UI: Clicks "Generate Onscreen Translation"
+        UI->>Backend: Trigger onscreentxt_trans API
+        Backend->>Worker: Enqueue Final Synthesis task
+    end
+
+    rect rgb(240, 248, 255)
+        Note right of Worker: Phase 3: Final Video Generation
+        Worker->>FFmpeg: Apply text overlay to video
+        Worker->>FFmpeg: Mux new video with translated audio & overlay
+        FFmpeg-->>Worker: localized_video.mp4
+        Worker->>Backend: Save final URLs & Update Status: Success
+        Backend-->>UI: Render HTML Video Preview with Subtitles
+    end
+```
 ---
 ## 7. Roadmap & Future Work
 For all future contributors:
