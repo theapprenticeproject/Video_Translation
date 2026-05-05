@@ -36,7 +36,7 @@
 3. [Cost Structure](#3-cost-structure)<br>
 4. [Installation and Deployment](#4-installation-and-deployment)<br>
 5. [Access & Credentials](#5-access--credentials)<br>
-6. [Data Flow Info](#data-flow-info)<br>
+6. [Data Flow Info](#6-data-flow-info)<br>
 7. [Roadmap & Future Work](#7-roadmap--future-work)<br>**
 
 ---
@@ -66,8 +66,10 @@
 
 ### 2.1 System Architecture
 #### 2.1.1 API & Media Transformation Flow
+<img width="1746" height="772" alt="mediaapiflow-light" src="https://github.com/user-attachments/assets/ccee596f-a253-44a7-90ca-e84c13681758" />
 
 #### 2.1.2 Queue Processing Flow
+<img width="1991" height="918" alt="processessing-queues-light" src="https://github.com/user-attachments/assets/69f6919f-61ac-4baa-a560-318a2436a018" />
 
 ### 2.2 Tech Stack
 * **Frappe** is a low-code web framework which handles server, client-side, database and other configurations altogether.
@@ -290,9 +292,12 @@ Reference: [Frappe Token Auth](https://docs.frappe.io/framework/user/en/guides/i
 ## 6. Data Flow Info
 ### 6.1 Entity-Relationship (ER) Diagram
 The database schema contains the application's doctypes: Video Info, Processed Video Info and other child tables. The following diagram highlights the doctype design, definitions and the relationships between them.
+<img width="1397" height="569" alt="doctypedesigndark" src="https://github.com/user-attachments/assets/084712ac-ddcf-41fa-b7b4-a5e4d477dcdf" />
 
 ### 6.2 Sequence Diagram
 This sequence diagram illustrates the end-to-end flow of a non-hindi localization pipeline. It maps interactions between Frappe backend, worker queues, and external API services such as ElevenLabs (TTS & STT), Bhashini (Text Translation), and Google Video Intelligence (Text Recognition). It also highlights where the automated pipeline involves human-in-the-loop (HITL) interventions, allowing users review, edit as the pipeline progress before finally synthesizing localized video files.
+<img width="5616" height="4652" alt="sequencediag-light" src="https://github.com/user-attachments/assets/aa4aa074-a5a3-4f96-9c39-241facfdaae0" />
+
 ```mermaid
 sequenceDiagram
     autonumber
