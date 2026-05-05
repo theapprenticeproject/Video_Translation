@@ -418,7 +418,7 @@ sequenceDiagram
 ---
 ## 7. Roadmap & Future Work
 For all future contributors:
-* This project follows Conventional Commits ↗ (adopted from mid-development onwards).
+* This project follows [Conventional Commits ↗](https://www.conventionalcommits.org/) (adopted from mid-development onwards).
 * Check **Issues** for past progress and trackng for future issues to work on.
 * Code Style
   * We use ***ruff*** (python) and prettier (JS/JSON) for consistent formatting.(Recommended)
