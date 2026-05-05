@@ -25,7 +25,7 @@
   </p>
 
   <p>
-    <a href="https://theapprenticeproject.gitbook.io/ai-video-localization/RbOX32eTbHDcOMXmXgoF/"><strong>Old Documentation »</strong></a>
+    <a href="https://theapprenticeproject.gitbook.io/ai-video-localization/RbOX32eTbHDcOMXmXgoF/">Old Docs »</a>
 </div>
 
 <hr />
@@ -66,9 +66,51 @@
 
 ### 2.1 System Architecture
 #### 2.1.1 API & Media Transformation Flow
+This diagram illustrates the external API routing and media transformation pipeline. The system branches into specialized workflows based on the selected target language.
+
+* **Phase 1: Input & Routing**<br>
+The pipeline evaluates the original video and routes it based on the selected target language i.e., splitting into a direct path for Hindi or a path for other Indic languages (e.g., Marathi, Punjabi).
+
+* **Phase 2a: Non-Hindi Translation**<br>
+A multi-step pipeline for languages which need more control over text translation & audio.
+
+  * Audio Extraction: FFmpeg extracts the audio track from the uploaded video or link.
+
+  * Transcription: ElevenLabs STT (Speech-to-Text) generates the original transcript.
+
+  * Translation: Bhashini API translates the text segments.
+
+  * HITL 1 (Human-In-The-Loop): The pipeline pauses, allowing the user to review and edit the translated segments via the UI.
+
+  * Speech Generation: Upon approval, ElevenLabs TTS (Text-to-Speech) synthesizes the new localized audio track.
+
+* **Phase 2b: Hindi Direct Dubbing**<br>
+A straightforward workflow that uses the ElevenLabs Dubbing API to handle end-to-end dubbing directly from the source video.
+
+* **Phase 3: On-Screen Text Localization**<br>
+Once the translated audio track or muxed video is created, the pipeline triggers the onscreen text localization process:
+
+  * Text Recognition (OCR): Google Video Intelligence API extracts text directly from the video frames with verbose response metadata.
+
+  * Translation: Bhashini translates the extracted OCR text.
+
+  * Subtitle Generation: The system automatically formats the translations into a VTT subtitle file.
+
+  * HITL 2 (Human-In-The-Loop): The pipeline pauses for a final user review of the translated on-screen text.
+
+* **Phase 4: Final Media Synthesis**<br>
+Triggered by the final HITL review, FFmpeg then collects info from childtable & permanently overlays the translated text (using filter script file) into the video frames and muxes the final video to produce the Final Localized Video.
+
 <img width="1746" height="772" alt="mediaapiflow-light" src="https://github.com/user-attachments/assets/ccee596f-a253-44a7-90ca-e84c13681758" />
 
 #### 2.1.2 Queue Processing Flow
+This diagram illustrates the queueing & processing flow of a record created in this video localization pipeline. The following highlights the lifecycle of this flow:<br>
+* **Upload Phase** <br>
+The process begins when a user uploads a video or link. This creates a `Video Info` record in database. The uploaded video file is stored under `public/files/original/` directory.
+* **Background Job Queues**<br>
+Once the localization process is initiated, a chain of background jobs are triggered sequentially. Managed by Frappe's queues, this allows multiple video records to be processed concurrently as each record waits in a queue with designated functionality. The pipeline is segmented as specialized task queues like audio extraction, speech translation, ocr, etc. Each subsequent function is enqueued only after the successful completion of the preceding step.
+* **Completion/Processing Phase**<br>
+As background workers execute these tasks, they continuously update a single `Processed Video Info` record with status & progress. During this automated flow, it includes HITL phases for review which then trigger to start subsequent functions within queues. As stages conclude, resulting files are stored to `public/files/processed` directory. 
 <img width="1991" height="918" alt="processessing-queues-light" src="https://github.com/user-attachments/assets/69f6919f-61ac-4baa-a560-318a2436a018" />
 
 ### 2.2 Tech Stack
@@ -296,7 +338,7 @@ The database schema contains the application's doctypes: Video Info, Processed V
 
 ### 6.2 Sequence Diagram
 This sequence diagram illustrates the end-to-end flow of a non-hindi localization pipeline. It maps interactions between Frappe backend, worker queues, and external API services such as ElevenLabs (TTS & STT), Bhashini (Text Translation), and Google Video Intelligence (Text Recognition). It also highlights where the automated pipeline involves human-in-the-loop (HITL) interventions, allowing users review, edit as the pipeline progress before finally synthesizing localized video files.
-<img width="5616" height="4652" alt="sequencediag-light" src="https://github.com/user-attachments/assets/aa4aa074-a5a3-4f96-9c39-241facfdaae0" />
+<!-- <img width="5616" height="4652" alt="sequencediag-light" src="https://github.com/user-attachments/assets/aa4aa074-a5a3-4f96-9c39-241facfdaae0" /> -->
 
 ```mermaid
 sequenceDiagram
