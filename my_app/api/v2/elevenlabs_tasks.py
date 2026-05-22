@@ -61,6 +61,7 @@ def speech_to_text(tar_lang_code, vid_filename: str, processed_docname: str, key
 			)
 
 	logger.info(f"Received response from STT: {response}")
+	# lang_code=response.language_code
 	segments_data = json.loads(response.additional_formats[0].content)
 	populate_segments_table(segments_data, tar_lang_code, processed_docname)
 
@@ -88,8 +89,8 @@ def text_to_speech(
 		input_videopath = frappe.get_site_path("public", "files", "original", vid_filename)
 
 	logger.info("Calling TTS model for voice output")
-	voices = {"mr": "VT26nWaqgBmXtH6KAeQ3", "pa": "vT0wMbLG5dssaBsksrb6"}  # Vaidehi & Noor respectively
-	lang_voice_id = voices.get("mr") if langcode == "mr" else voices.get("pa")
+	voices = {"mr": "VT26nWaqgBmXtH6KAeQ3", "pa": "vT0wMbLG5dssaBsksrb6", "kn":"EMxdghWQV7gqV33j4J3F"}  # Vaidehi, Noor & Abhi respectively
+	lang_voice_id = voices.get(langcode)
 	if pro_dicts:
 		pro_dict_ids = create_pronunciation_rules(pro_dicts)
 		response = labs_client.text_to_speech.convert(
