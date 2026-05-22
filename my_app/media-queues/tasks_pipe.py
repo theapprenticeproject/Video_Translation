@@ -35,7 +35,7 @@ def trigger_pipeline(video_info_docname: str, video_filename: str):
 				queue="long",
 				video_filename=video_filename,
 				processed_docname=processed_doc.name,
-				user=frappe.session.clear,
+				user=frappe.session.user,
 			)
 		else:
 			# bhashini API services for non-hindi translations
