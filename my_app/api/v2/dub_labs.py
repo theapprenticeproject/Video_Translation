@@ -24,16 +24,16 @@ def dubbing(video_filename: str, processed_docname: str):
 				metadata = labs_client.dubbing.get(dubbing_id)
 				if metadata.status == "dubbed":
 					return True
-				elif metadata.status == "dubbing":
-					print("Dubbing in progress... Will check status again in", CHECK_INTERVAL, "seconds.")
+				elif metadata.status == "failed":
+					print("Dubbing failed:", metadata.error)
+					logger.error(f"Dubbing failed : {metadata.error}")
+					return False
+				else:
+					logger.info(f"Status: {metadata.status}")
 					logger.info(
 						f"Dubbing in progress... Will check status again in {CHECK_INTERVAL} seconds."
 					)
 					time.sleep(CHECK_INTERVAL)
-				else:
-					print("Dubbing failed:", metadata.error)
-					logger.error(f"Dubbing failed : {metadata.error}")
-					return False
 
 			print("Dubbing timed out")
 			return False
@@ -45,7 +45,6 @@ def dubbing(video_filename: str, processed_docname: str):
 				file=videofile, target_lang="hi", mode="automatic", watermark=True
 			)
 		dubbing_id = response.dubbing_id
-		print("dubbing id: ", dubbing_id)
 		if wait_for_dubbing_completion(dubbing_id):
 			output_filename = f"dub_{video_filename}"
 			output_videopath = frappe.get_site_path("public", "files", "processed", output_filename)

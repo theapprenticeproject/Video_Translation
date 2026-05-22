@@ -14,7 +14,7 @@ from my_app.api.v2.onscreen_txt import apply_onscreentext, screen_txtoverlay
 from my_app.api.v2.segment_tasks import segment_main
 from my_app.helper.options import normalize_keyterms, sanitize_pro_dicts
 
-languages = {"Marathi": "mr", "Punjabi": "pa", "Hindi": "hi"}
+languages = {"Marathi": "mr", "Punjabi": "pa", "Hindi": "hi", "Kannada": "kn"}
 
 
 @frappe.whitelist()
@@ -337,12 +337,13 @@ def hindi_dubbing(video_filename: str, processed_docname: str, user: str):
 		method="my_app.media-queues.tasks_pipe.extract_audio",
 		queue="short",
 		videofile=processed_videofile_url,
+		video_filename=video_filename,
 		processed_docname=processed_docname,
 		user=user,
 	)
 
 
-def extract_audio(videofile: str, processed_docname: str, user: str):
+def extract_audio(videofile: str, video_filename: str, processed_docname: str, user: str):
 	extraction_info = audio_extraction(videofile)
 	processed_doc = frappe.get_doc("Processed Video Info", processed_docname)
 	processed_doc.activity = "Audio Extracted from Dubbed Vid"
@@ -351,8 +352,9 @@ def extract_audio(videofile: str, processed_docname: str, user: str):
 	frappe.db.commit()
 
 	frappe.enqueue(
-		method="my_app.media-queues.tasks_pipe.get_subtitles",
-		queue="short",
+		method="my_app.media-queues.tasks_pipe.on_screen_txt_translation",
+		queue="long",
+		vid_filename=video_filename,
 		audio_filename=extraction_info["audio_filename"],
 		lang_code="hi",
 		processed_docname=processed_docname,
