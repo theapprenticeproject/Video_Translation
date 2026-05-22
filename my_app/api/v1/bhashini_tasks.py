@@ -167,6 +167,8 @@ def text_translation(text, target_langcode: str, processed_docname: str):
 			text_list = [text]
 		else:
 			text_list = text
+		if target_langcode == "kan":
+			target_langcode = "kn"
 		body = {
 			"pipelineTasks": [
 				{

@@ -29,6 +29,7 @@ language_fonts_path = {
 	"hi": "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Bold.ttf",
 	"mr": "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Bold.ttf",
 	"pa": "/usr/share/fonts/truetype/noto/NotoSansGurmukhi-Bold.ttf",
+	"kn": "/usr/share/fonts/truetype/noto/NotoSansKannada-Bold.ttf"
 }
 
 
