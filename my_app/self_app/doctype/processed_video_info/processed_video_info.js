@@ -119,18 +119,20 @@ frappe.ui.form.on("Processed Video Info", {
         if (showSegmenttxtCondition) {
             let btn = frm.add_custom_button("Generate Speech", () => {
                 frm.remove_custom_button("Generate Speech")
-                frappe.db.get_value("Video Info", frm.doc.origin_vid_link, ["target_lang", "original_vid"]).then(
-                    r => {
-                        frappe.call({
-                            method: "my_app.media-queues.tasks_pipe.speech_trigger",
-                            args: {
-                                vid_filename: r.message.original_vid,
-                                tar_lang: r.message.target_lang,
-                                processed_docname: frm.doc.name
-                            }
-                        })
-                    }
-                )
+                frappe.db.set_value("Processed Video Info", frm.doc.name, "activity", "Generating Speech").then(()=>{
+                    frappe.db.get_value("Video Info", frm.doc.origin_vid_link, ["target_lang", "original_vid"]).then(
+                        r => {
+                            frappe.call({
+                                method: "my_app.media-queues.tasks_pipe.speech_trigger",
+                                args: {
+                                    vid_filename: r.message.original_vid,
+                                    tar_lang: r.message.target_lang,
+                                    processed_docname: frm.doc.name
+                                }
+                            })
+                        }
+                    )
+                })
             })
             btn.addClass("btn-blue")
         }

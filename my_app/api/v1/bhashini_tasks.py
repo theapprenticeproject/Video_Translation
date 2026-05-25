@@ -185,7 +185,7 @@ def text_translation(text, target_langcode: str, processed_docname: str):
 		response = requests.post(
 			"https://dhruva-api.bhashini.gov.in/services/inference/pipeline", json=body, headers=headers
 		)
-		logger.info("Received translation response : ", response.json())
+		logger.info(f"Received translation response : {response.json()} and status: {response.status_code}")
 		response_list = response.json()["pipelineResponse"][0]["output"]
 		translated_text_list = [item["target"] for item in response_list]
 		processed_doc.activity = f"Text translated into {target_langcode}"

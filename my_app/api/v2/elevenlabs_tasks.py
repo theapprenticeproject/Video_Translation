@@ -22,6 +22,7 @@ def populate_segments_table(segments_data: dict, tar_lang_code: str, processed_d
 		if segments_data:
 			segments = segments_data.get("segments")
 			source_texts = [seg["text"] for seg in segments]
+			logger.info(f"Source Texts: {source_texts}")
 			translated_texts = text_translation(source_texts, tar_lang_code, processed_docname)
 			processed_doc.reload()
 			logger.info("Received translated text from bhashini:")
