@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import subprocess
 
 import frappe
@@ -78,42 +79,121 @@ def text_to_speech(
 	text_pieces = []
 	for i in processed_doc.get("translated_segments", []):
 		if i.translated_text:
-			text_pieces.append(i.translated_text)
-	entire_text = " ".join(text_pieces)
+			cleaned_text = re.sub(r"\[.*?\]|\(.*?\)", "", i.translated_text)
+
+			if cleaned_text.strip():
+				text_pieces.append(cleaned_text.strip())
+
+	MAX_CHARS = 500
+	chunks = []
+	curr_chunk = ""
+
+	for text in text_pieces:
+		if len(curr_chunk) + len(text) < MAX_CHARS:
+			curr_chunk += text + " "
+		else:
+			if curr_chunk.strip():
+				chunks.append(curr_chunk.strip())
+			curr_chunk = text + " "
+
+	if curr_chunk.strip():
+		chunks.append(curr_chunk.strip())
+
 	output_audio_filename = f"labs_sts_{vid_filename}".replace("mp4", "mp3")
 	output_audiopath = frappe.get_site_path("public", "files", "processed", output_audio_filename)
+
 	if is_retry:
 		input_videopath = frappe.get_site_path("public", "files", f"onscreen_labs_sts_{vid_filename}")
-		output_videopath= frappe.get_site_path("public", "files", f"temp_retry_{vid_filename}")
+		output_videopath = frappe.get_site_path("public", "files", f"temp_retry_{vid_filename}")
 	else:
 		output_videopath = frappe.get_site_path("public", "files", "processed", f"labs_sts_{vid_filename}")
 		input_videopath = frappe.get_site_path("public", "files", "original", vid_filename)
 
 	logger.info("Calling TTS model for voice output")
-	voices = {"mr": "VT26nWaqgBmXtH6KAeQ3", "pa": "vT0wMbLG5dssaBsksrb6", "kn":"EMxdghWQV7gqV33j4J3F"}  # Vaidehi, Noor & Abhi respectively
+	voices = {
+		"mr": "VT26nWaqgBmXtH6KAeQ3",
+		"pa": "vT0wMbLG5dssaBsksrb6",
+		"kn": "EMxdghWQV7gqV33j4J3F",
+	}  # Vaidehi, Noor & Abhi respectively
 	lang_voice_id = voices.get(langcode)
+
+	pro_dict_ids = None
 	if pro_dicts:
 		pro_dict_ids = create_pronunciation_rules(pro_dicts)
-		response = labs_client.text_to_speech.convert(
-			text=entire_text,
-			voice_id=lang_voice_id,
-			model_id="eleven_v3",
-			pronunciation_dictionary_locators=[
+
+	segmented_audio_filenames = []
+
+	for idx, chunk_text in enumerate(chunks):
+		logger.info(f"Chunk-{idx}: {chunk_text}")
+		if not chunk_text.strip():
+			continue
+
+		seg_aud_path = frappe.get_site_path("public", "files", f"temp_segment_{idx}.mp3")
+
+		kwargs = {"text": chunk_text, "voice_id": lang_voice_id, "model_id": "eleven_v3"}
+
+		if pro_dict_ids:
+			kwargs["pronunciation_dictionary_locators"] = [
 				PronunciationDictionaryVersionLocator(
 					pronunciation_dictionary_id=pro_dict_ids.id, version_id=pro_dict_ids.version_id
 				)
+			]
+
+		try:
+			logger.info(f"Generating TTS for chunk {idx + 1}/{len(chunks)}")
+			response = labs_client.text_to_speech.convert(**kwargs)
+			logger.info(f"Response received from TTS model for chunk {idx + 1}")
+
+			with open(seg_aud_path, "wb") as f:
+				for chunk_data in response:
+					if chunk_data:
+						f.write(chunk_data)
+
+			# File Size Check
+			file_size = os.path.getsize(seg_aud_path)
+			logger.info(f"--> Saved {seg_aud_path} (Size: {file_size} bytes)")
+
+			segmented_audio_filenames.append(seg_aud_path)
+
+		except Exception as e:
+			logger.error(f"Failed to generate TTS for chunk {idx}: {e}")
+			frappe.throw(f"Failed to generate TTS for chunk {idx}: {e}")
+
+	if segmented_audio_filenames:
+		concat_file = frappe.get_site_path("public", "files", "concat_list.txt")
+		logger.info(f"Output Audiopath: {output_audiopath}")
+
+		with open(concat_file, "w") as f:
+			for filename in segmented_audio_filenames:
+				abs_path = os.path.abspath(filename)
+				f.write(f"file '{abs_path}'\n")
+
+		logger.info("Before subprocess concat segmented audio files")
+		subprocess.run(
+			[
+				"ffmpeg",
+				"-y",
+				"-nostdin",
+				"-f",
+				"concat",
+				"-safe",
+				"0",
+				"-i",
+				concat_file,
+				"-c",
+				"copy",
+				output_audiopath,
 			],
+			check=True,
 		)
-	else:
-		response = labs_client.text_to_speech.convert(
-			text=entire_text, voice_id=lang_voice_id, model_id="eleven_v3"
-		)
-	logger.info(f"Output audiopath: {output_audiopath}")
-	logger.info(f"Response received from TTS model: {response}")
-	with open(output_audiopath, "wb") as f:
-		for chunk in response:
-			if chunk:
-				f.write(chunk)
+
+		# Clean up temporary segment files and concat list
+		for f_path in segmented_audio_filenames:
+			if os.path.exists(f_path):
+				os.remove(f_path)
+		if os.path.exists(concat_file):
+			os.remove(concat_file)
+
 	if os.path.exists(output_audiopath):
 		logger.info("Running muxing command of output audio to input video")
 		subprocess.run(
@@ -134,7 +214,8 @@ def text_to_speech(
 				"-map",
 				"1:a:0",
 				output_videopath,
-			]
+			],
+			check=True,  # Added check=True here as well for safety
 		)
 		if is_retry:
 			# Overwrite the original onscreen text video with the newly muxed audio version
@@ -146,6 +227,7 @@ def text_to_speech(
 		processed_doc.save(ignore_permissions=True)
 		frappe.db.commit()
 		logger.info("Video localized after subprocess command execution")
+
 	return {
 		"audio_filename": output_audio_filename,
 		"audio_filepath": f"/files/processed/{output_audio_filename}",
