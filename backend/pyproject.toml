@@ -10,4 +10,5 @@ dependencies = [
     "pydantic-settings>=2.4.0",
     "rq>=1.16.0",
     "redis>=5.0.0",
+    "google-cloud-storage>=2.18.0",
 ]
