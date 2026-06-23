@@ -15,6 +15,7 @@ class Settings(BaseSettings):
 
     gcs_service_account_json: str
     gcs_bucket_name: str
+    gcs_bucket_prefix: str
 
     elevenlabs_api_key: str
     bhashini_api_key: str
