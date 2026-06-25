@@ -104,6 +104,23 @@ def get_signed_download_url(object_name: str, expiry_minutes: int = 60) -> str:
     return url
 
 
+def download_blob_to_bytes(object_name: str) -> bytes:
+    """Download a GCS object and return its content as bytes."""
+    blob = _bucket().blob(object_name)
+    data = blob.download_as_bytes()
+    log.info("Downloaded %d bytes from gs://%s/%s",
+             len(data), settings.gcs_bucket_name, object_name)
+    return data
+
+
+def upload_from_file(object_name: str, file_path: str, content_type: str = "application/octet-stream") -> None:
+    """Upload a local file to GCS."""
+    blob = _bucket().blob(object_name)
+    blob.upload_from_filename(file_path, content_type=content_type)
+    log.info("Uploaded file %s to gs://%s/%s",
+             file_path, settings.gcs_bucket_name, object_name)
+
+
 def delete_object(object_name: str) -> None:
     """Delete a GCS object (optional cleanup after pipeline completion)."""
     blob = _bucket().blob(object_name)

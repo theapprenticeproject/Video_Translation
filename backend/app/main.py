@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.logger import get_logger
-from app.routes import upload
+from app.routes import upload, jobs
 
 log = get_logger(__name__)
 
@@ -18,6 +18,7 @@ app.add_middleware(
 )
 
 app.include_router(upload.router)
+app.include_router(jobs.router)
 
 
 @app.on_event("startup")
