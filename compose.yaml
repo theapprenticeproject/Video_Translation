@@ -44,6 +44,21 @@ services:
       backend:
         condition: service_started
 
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    networks:
+      - app-network
+    depends_on:
+      - backend
+
 networks:
   app-network:
     driver: bridge
