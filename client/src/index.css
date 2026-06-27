@@ -1,19 +1,19 @@
 /* ================================================================
-   DESIGN TOKENS
+   DESIGN TOKENS — dark mode (native/default)
    ================================================================ */
 :root {
   color-scheme: dark;
 
-  /* Palette — studio / tape deck */
-  --c-bg:        #0E1210;
-  --c-paper:     #F3EFE6;
-  --c-amber:     #E8A33D;
-  --c-amber-dim: rgba(232, 163, 61, 0.18);
-  --c-teal:      #5B8C7B;
-  --c-brick:     #C2503E;
-  --c-graphite:  #3A3F3C;
+  /* Palette — studio at night */
+  --c-bg:           #0E1210;
+  --c-paper:        #F3EFE6;
+  --c-amber:        #E8A33D;
+  --c-amber-dim:    rgba(232, 163, 61, 0.18);
+  --c-teal:         #5B8C7B;
+  --c-brick:        #C2503E;
+  --c-graphite:     #3A3F3C;
   --c-graphite-dim: rgba(58, 63, 60, 0.35);
-  --c-paper-dim: rgba(243, 239, 230, 0.45);
+  --c-paper-dim:    rgba(243, 239, 230, 0.45);
 
   /* Typography */
   --f-display: 'Fraunces', Georgia, serif;
@@ -56,6 +56,73 @@
 }
 
 /* ================================================================
+   LIGHT MODE — "daylight studio reel" (prefers-color-scheme: light)
+   Same metaphor, same type, same layout — only materiality changes.
+   Accent colors deepened for legibility on bone paper.
+   ================================================================ */
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+
+    /* Palette — studio with the lights on */
+    --c-bg:           #F7F3EA;                    /* bone paper — analog tape sleeve */
+    --c-paper:        #1C1B17;                    /* ink */
+    --c-amber:        #B5722A;                    /* burnt amber — more weight on light bg */
+    --c-amber-dim:    rgba(181, 114, 42, 0.12);
+    --c-teal:         #3F7A63;                    /* forest teal — deepened for contrast */
+    --c-brick:        #A23B2C;                    /* rust red — deepened for contrast */
+    --c-graphite:     #8C857A;                    /* warm grey — aged paper/cardstock */
+    --c-graphite-dim: rgba(140, 133, 122, 0.22);
+    --c-paper-dim:    rgba(28, 27, 23, 0.5);
+  }
+
+  html { color-scheme: light; }
+
+  body { background-color: var(--c-bg); }
+
+  /* Scrollbar — warm tones on light bg */
+  ::-webkit-scrollbar-track { background: var(--c-bg); }
+  ::-webkit-scrollbar-thumb { background: var(--c-graphite); }
+
+  /* Tape strip: background bars slightly darker on light bg */
+  .tape-waveform__bar--bg { opacity: 0.2; }
+
+  /* Header border slightly stronger on light */
+  .layout__header { border-bottom-color: var(--c-graphite); }
+
+  /* Voice input border */
+  .voice-input {
+    background: rgba(140, 133, 122, 0.08);
+  }
+
+  /* Segment translation textarea */
+  .segment-translation-input:hover,
+  .segment-translation-input:focus {
+    background: rgba(140, 133, 122, 0.12);
+  }
+
+  /* Download file info card */
+  .download-file-info {
+    background: rgba(140, 133, 122, 0.08);
+  }
+
+  /* Btn ghost — legible on light */
+  .btn--ghost {
+    border-color: var(--c-graphite);
+    color: var(--c-paper-dim);
+  }
+  .btn--ghost:hover {
+    border-color: var(--c-paper);
+    color: var(--c-paper);
+  }
+
+  /* Error block */
+  .progress-error {
+    background: rgba(162, 59, 44, 0.06);
+  }
+}
+
+/* ================================================================
    RESET & BASE
    ================================================================ */
 *, *::before, *::after {
@@ -65,7 +132,8 @@
 }
 
 html {
-  color-scheme: dark;
+  /* Dark is native — light overridden in media query above */
+  color-scheme: dark light;
   height: 100%;
 }
 

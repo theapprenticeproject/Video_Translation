@@ -6,6 +6,7 @@ const LANGUAGES = [
   { code: 'mr', label: 'Marathi' },
   { code: 'hi', label: 'Hindi' },
   { code: 'pa', label: 'Punjabi' },
+  { code: 'kn', label: 'Kannada' },
 ];
 
 export default function ConfigureStep() {

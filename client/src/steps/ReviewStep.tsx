@@ -37,7 +37,8 @@ export default function ReviewStep() {
     }
   }, [jobId, segments, goTo]);
 
-  const langName = language === 'mr' ? 'Marathi' : language === 'pa' ? 'Punjabi' : 'Hindi';
+  const LANG_NAMES: Record<string, string> = { mr: 'Marathi', hi: 'Hindi', pa: 'Punjabi', kn: 'Kannada' };
+  const langName = LANG_NAMES[language] ?? language;
 
   return (
     <div className="review-step">

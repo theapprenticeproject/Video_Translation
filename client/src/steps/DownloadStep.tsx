@@ -33,11 +33,8 @@ export default function DownloadStep() {
 
   const handleDownload = useCallback(() => {
     if (!downloadUrl) return;
-    const a = document.createElement('a');
-    a.href = downloadUrl;
-    a.download = `translation_${jobId ?? 'output'}.mp3`;
-    a.click();
-  }, [downloadUrl, jobId]);
+    window.open(downloadUrl, '_blank', 'noreferrer');
+  }, [downloadUrl]);
 
   return (
     <div className="download-step">
