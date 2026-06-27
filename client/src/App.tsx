@@ -1,122 +1,135 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { createContext, useCallback, useContext, useState } from 'react';
+import TapeStrip from './components/TapeStrip';
+import UploadStep from './steps/UploadStep';
+import ConfigureStep from './steps/ConfigureStep';
+import ProgressStep from './steps/ProgressStep';
+import ReviewStep from './steps/ReviewStep';
+import DownloadStep from './steps/DownloadStep';
+import type { Segment } from './api/jobs';
 
-function App() {
-  const [count, setCount] = useState(0)
+export type Step = 1 | 2 | 3 | 4 | 5;
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+// ─── Wizard Context ──────────────────────────────────────────────
+export interface WizardContextValue {
+  step: Step;
+  objectName: string | null;
+  jobId: string | null;
+  language: string;
+  voiceId: string;
+  subStage: string | null;
+  segments: Segment[];
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+  goTo: (next: Step) => void;
+  reset: () => void;
+  setObjectName: (v: string) => void;
+  setJobId: (v: string) => void;
+  setLanguage: (v: string) => void;
+  setVoiceId: (v: string) => void;
+  setSubStage: (v: string | null) => void;
+  setSegments: (v: Segment[]) => void;
 }
 
-export default App
+const noop = () => {};
+
+export const WizardContext = createContext<WizardContextValue>({
+  step: 1,
+  objectName: null,
+  jobId: null,
+  language: 'mr',
+  voiceId: '',
+  subStage: null,
+  segments: [],
+  goTo: noop,
+  reset: noop,
+  setObjectName: noop,
+  setJobId: noop,
+  setLanguage: noop,
+  setVoiceId: noop,
+  setSubStage: noop,
+  setSegments: noop,
+});
+
+// ─── Hook shorthand ──────────────────────────────────────────────
+export function useWizard() {
+  return useContext(WizardContext);
+}
+
+// ─── View Transition helper ───────────────────────────────────────
+function withTransition(fn: () => void) {
+  if ('startViewTransition' in document) {
+    document.startViewTransition(fn);
+  } else {
+    fn();
+  }
+}
+
+// ─── App ─────────────────────────────────────────────────────────
+export default function App() {
+  const [step,       setStep]       = useState<Step>(1);
+  const [objectName, setObjectName] = useState<string | null>(null);
+  const [jobId,      setJobId]      = useState<string | null>(null);
+  const [language,   setLanguage]   = useState('mr');
+  const [voiceId,    setVoiceId]    = useState('');
+  const [subStage,   setSubStage]   = useState<string | null>(null);
+  const [segments,   setSegments]   = useState<Segment[]>([]);
+
+  const goTo = useCallback((next: Step) => {
+    withTransition(() => setStep(next));
+  }, []);
+
+  const reset = useCallback(() => {
+    withTransition(() => {
+      setStep(1);
+      setObjectName(null);
+      setJobId(null);
+      setSubStage(null);
+      setSegments([]);
+    });
+  }, []);
+
+  // When job enters awaiting_review, pull segments from the most recent poll.
+  // ProgressStep calls setSubStage but doesn't hold segments — ReviewStep reads
+  // from context, which is fed by ProgressStep via a special path:
+  // ProgressStep → sets subStage → App detects awaiting_review in poll → goTo(4)
+  // The segments are passed via context after being fetched in ProgressStep.
+  // We expose setSegments so ProgressStep can push them before advancing.
+
+  const ctxValue: WizardContextValue = {
+    step, objectName, jobId, language, voiceId, subStage, segments,
+    goTo, reset,
+    setObjectName,
+    setJobId,
+    setLanguage,
+    setVoiceId,
+    setSubStage,
+    setSegments,
+  };
+
+  return (
+    <WizardContext.Provider value={ctxValue}>
+      <div className="layout">
+        {/* ── Header: logo + tape strip ── */}
+        <header className="layout__header">
+          <div className="header-top">
+            <span className="logo">
+              Localizer<span className="logo__accent"> ·</span>
+            </span>
+          </div>
+          <TapeStrip step={step} subStage={subStage} />
+        </header>
+
+        {/* ── Step content ── */}
+        <main className="layout__main" id="main-content">
+          {/* key forces remount on step change — triggers view-transition */}
+          <div className="step-content" key={step}>
+            {step === 1 && <UploadStep />}
+            {step === 2 && <ConfigureStep />}
+            {step === 3 && <ProgressStep />}
+            {step === 4 && <ReviewStep />}
+            {step === 5 && <DownloadStep />}
+          </div>
+        </main>
+      </div>
+    </WizardContext.Provider>
+  );
+}
