@@ -48,6 +48,7 @@ services:
     build:
       context: ./client
       dockerfile: Dockerfile
+      target: dev
     restart: unless-stopped
     ports:
       - "5173:5173"
