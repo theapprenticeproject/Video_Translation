@@ -1,10 +1,19 @@
 /** Base fetch wrapper. All paths are relative to VITE_API_SERVER_URL. */
 const BASE = (import.meta.env.VITE_API_SERVER_URL as string | undefined) ?? 'http://localhost:8000';
 
-export async function api<T>(path: string, init?: RequestInit): Promise<T> {
+export async function api<T>(
+  path: string,
+  init?: RequestInit,
+  token?: string,
+): Promise<T> {
+  const authHeader: Record<string, string> = token
+    ? { Authorization: `Bearer ${token}` }
+    : {};
+
   const res = await fetch(`${BASE}${path}`, {
     headers: {
       'Content-Type': 'application/json',
+      ...authHeader,
       ...init?.headers,
     },
     ...init,

@@ -1,9 +1,11 @@
 import { useEffect, useState, useContext, useCallback } from 'react';
+import { useAuth } from '@clerk/react';
 import { WizardContext } from '../App';
 import { getDownloadUrl } from '../api/jobs';
 
 export default function DownloadStep() {
   const { jobId, reset } = useContext(WizardContext);
+  const { getToken } = useAuth();
 
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -14,22 +16,24 @@ export default function DownloadStep() {
     let active = true;
     setLoading(true);
 
-    getDownloadUrl(jobId)
-      .then(({ download_url }) => {
+    void (async () => {
+      try {
+        const token = await getToken() ?? undefined;
+        const { download_url } = await getDownloadUrl(jobId, token);
         if (active) {
           setDownloadUrl(download_url);
           setLoading(false);
         }
-      })
-      .catch((err: unknown) => {
+      } catch (err: unknown) {
         if (active) {
           setError(err instanceof Error ? err.message : 'Could not get download URL.');
           setLoading(false);
         }
-      });
+      }
+    })();
 
     return () => { active = false; };
-  }, [jobId]);
+  }, [jobId, getToken]);
 
   const handleDownload = useCallback(() => {
     if (!downloadUrl) return;

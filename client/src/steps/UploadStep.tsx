@@ -1,4 +1,5 @@
 import { useRef, useState, useContext, useCallback } from 'react';
+import { useAuth } from '@clerk/react';
 import { WizardContext } from '../App';
 import { getSignedUploadUrl, uploadFileToGCS } from '../api/upload';
 
@@ -12,6 +13,7 @@ function formatBytes(bytes: number): string {
 
 export default function UploadStep() {
   const { setObjectName, goTo } = useContext(WizardContext);
+  const { getToken } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [file, setFile] = useState<File | null>(null);
@@ -63,7 +65,8 @@ export default function UploadStep() {
     setError(null);
     setProgress(0);
     try {
-      const { upload_url, object_name } = await getSignedUploadUrl(file.name, file.type || 'application/octet-stream');
+      const token = await getToken() ?? undefined;
+      const { upload_url, object_name } = await getSignedUploadUrl(file.name, file.type || 'application/octet-stream', token);
       await uploadFileToGCS(upload_url, file, setProgress);
       setObjectName(object_name);
       goTo(2);
@@ -72,7 +75,7 @@ export default function UploadStep() {
     } finally {
       setUploading(false);
     }
-  }, [file, setObjectName, goTo]);
+  }, [file, setObjectName, goTo, getToken]);
 
   return (
     <div className="upload-step">

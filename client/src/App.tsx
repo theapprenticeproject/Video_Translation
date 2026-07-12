@@ -1,4 +1,9 @@
 import { createContext, useCallback, useContext, useState } from 'react';
+import {
+  Show,
+  UserButton,
+  SignInButton,
+} from '@clerk/react';
 import TapeStrip from './components/TapeStrip';
 import UploadStep from './steps/UploadStep';
 import ConfigureStep from './steps/ConfigureStep';
@@ -63,6 +68,55 @@ function withTransition(fn: () => void) {
   }
 }
 
+// ─── Auth Gate — glassmorphism overlay ───────────────────────────
+function AuthGate() {
+  return (
+    <>
+      {/* Blurred wizard shell visible behind the gate */}
+      <div className="layout layout--blurred" aria-hidden="true">
+        <header className="layout__header">
+          <div className="header-top">
+            <span className="logo">
+              Localizer<span className="logo__accent"> ·</span>
+            </span>
+          </div>
+          <TapeStrip step={1} subStage={null} />
+        </header>
+      </div>
+
+      {/* Glassmorphism card centred over the blur */}
+      <div className="auth-gate" aria-modal="true" role="dialog" aria-label="Sign in required">
+        <div className="auth-gate__card">
+          <div className="auth-gate__logo">
+            Localizer<span className="logo__accent"> ·</span>
+          </div>
+          <h1 className="auth-gate__heading">Studio Access</h1>
+          <p className="auth-gate__sub">
+            Sign in to start translating your audio — your sessions and segments are saved securely.
+          </p>
+          {/* SignInButton with mode="modal" opens Clerk's modal without navigation */}
+          <SignInButton mode="modal">
+            <button
+              id="auth-gate-signin-btn"
+              className="btn btn--primary auth-gate__btn"
+            >
+              Sign in to continue
+            </button>
+          </SignInButton>
+          <p className="auth-gate__fine">
+            New here?{' '}
+            <SignInButton mode="modal">
+              <button className="auth-gate__link">
+                Create an account
+              </button>
+            </SignInButton>
+          </p>
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ─── App ─────────────────────────────────────────────────────────
 export default function App() {
   const [step,       setStep]       = useState<Step>(1);
@@ -107,29 +161,49 @@ export default function App() {
 
   return (
     <WizardContext.Provider value={ctxValue}>
-      <div className="layout">
-        {/* ── Header: logo + tape strip ── */}
-        <header className="layout__header">
-          <div className="header-top">
-            <span className="logo">
-              Localizer<span className="logo__accent"> ·</span>
-            </span>
-          </div>
-          <TapeStrip step={step} subStage={subStage} />
-        </header>
+      {/*
+       * <Show when="signed-in"> renders children when authenticated,
+       * and `fallback` when signed-out (or while Clerk is loading).
+       * Handles loading state internally — no isLoaded guard needed.
+       */}
+      <Show when="signed-in" fallback={<AuthGate />}>
+        <div className="layout">
+          {/* ── Header: logo + UserButton + tape strip ── */}
+          <header className="layout__header">
+            <div className="header-top">
+              <span className="logo">
+                Localizer<span className="logo__accent"> ·</span>
+              </span>
+              {/* UserButton — avatar + dropdown (sign out, profile) */}
+              <div className="header-user-btn">
+                <UserButton
+                  appearance={{
+                    elements: {
+                      avatarBox: 'clerk-avatar-box',
+                      userButtonPopoverCard: 'clerk-popover-card',
+                      userButtonPopoverActionButton: 'clerk-popover-action',
+                      userButtonPopoverFooter: 'clerk-popover-footer',
+                    },
+                  }}
+                />
+              </div>
+            </div>
+            <TapeStrip step={step} subStage={subStage} />
+          </header>
 
-        {/* ── Step content ── */}
-        <main className="layout__main" id="main-content">
-          {/* key forces remount on step change — triggers view-transition */}
-          <div className="step-content" key={step}>
-            {step === 1 && <UploadStep />}
-            {step === 2 && <ConfigureStep />}
-            {step === 3 && <ProgressStep />}
-            {step === 4 && <ReviewStep />}
-            {step === 5 && <DownloadStep />}
-          </div>
-        </main>
-      </div>
+          {/* ── Step content ── */}
+          <main className="layout__main" id="main-content">
+            {/* key forces remount on step change — triggers view-transition */}
+            <div className="step-content" key={step}>
+              {step === 1 && <UploadStep />}
+              {step === 2 && <ConfigureStep />}
+              {step === 3 && <ProgressStep />}
+              {step === 4 && <ReviewStep />}
+              {step === 5 && <DownloadStep />}
+            </div>
+          </main>
+        </div>
+      </Show>
     </WizardContext.Provider>
   );
 }

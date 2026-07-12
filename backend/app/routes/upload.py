@@ -6,9 +6,10 @@ POST /api/upload/signed-url
   Returns: { "upload_url": "<signed GCS PUT url>", "object_name": "originals/abc_video.mp4" }
 """
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
+from app.auth import require_auth
 from app.logger import get_logger
 from app.services import gcs
 
@@ -36,7 +37,7 @@ class SignedUrlResponse(BaseModel):
         "The client uploads the file directly to GCS — no file data passes through the backend."
     ),
 )
-def get_signed_url(body: SignedUrlRequest) -> SignedUrlResponse:
+def get_signed_url(body: SignedUrlRequest, user_id: str = Depends(require_auth)) -> SignedUrlResponse:
     log.info("Signed URL requested for file=%s type=%s", body.filename, body.content_type)
     try:
         object_name = gcs.make_object_name(body.filename)

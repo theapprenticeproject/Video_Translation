@@ -39,28 +39,29 @@ export async function createJob(
   objectName: string,
   language: string,
   voiceId: string,
+  token?: string,
 ): Promise<CreateJobResponse> {
   return api<CreateJobResponse>('/api/jobs', {
     method: 'POST',
     body: JSON.stringify({ object_name: objectName, language, voice_id: voiceId }),
-  });
+  }, token);
 }
 
-export async function pollJob(jobId: string): Promise<Job> {
-  return api<Job>(`/api/jobs/${jobId}`);
+export async function pollJob(jobId: string, token?: string): Promise<Job> {
+  return api<Job>(`/api/jobs/${jobId}`, undefined, token);
 }
 
-export async function updateSegments(jobId: string, segments: Segment[]): Promise<void> {
+export async function updateSegments(jobId: string, segments: Segment[], token?: string): Promise<void> {
   await api<null>(`/api/jobs/${jobId}/segments`, {
     method: 'PATCH',
     body: JSON.stringify({ segments }),
-  });
+  }, token);
 }
 
-export async function approveJob(jobId: string): Promise<void> {
-  await api<null>(`/api/jobs/${jobId}/approve`, { method: 'POST' });
+export async function approveJob(jobId: string, token?: string): Promise<void> {
+  await api<null>(`/api/jobs/${jobId}/approve`, { method: 'POST' }, token);
 }
 
-export async function getDownloadUrl(jobId: string): Promise<DownloadResponse> {
-  return api<DownloadResponse>(`/api/jobs/${jobId}/download`);
+export async function getDownloadUrl(jobId: string, token?: string): Promise<DownloadResponse> {
+  return api<DownloadResponse>(`/api/jobs/${jobId}/download`, undefined, token);
 }

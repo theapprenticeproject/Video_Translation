@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useContext } from 'react';
+import { useAuth } from '@clerk/react';
 import { WizardContext } from '../App';
 import { pollJob } from '../api/jobs';
 
@@ -26,6 +27,7 @@ function stageLabel(stage: string): string {
 
 export default function ProgressStep() {
   const { jobId, setSubStage, setSegments, goTo } = useContext(WizardContext);
+  const { getToken } = useAuth();
 
   const [currentStage, setCurrentStage] = useState('extracting');
   const [failed, setFailed] = useState(false);
@@ -40,7 +42,8 @@ export default function ProgressStep() {
 
     const poll = async () => {
       try {
-        const job = await pollJob(jobId);
+        const token = await getToken() ?? undefined;
+        const job = await pollJob(jobId, token);
         setCurrentStage(job.stage);
         setSubStage(job.stage);
 
@@ -75,7 +78,7 @@ export default function ProgressStep() {
     void poll();
     timerRef.current = setInterval(() => { void poll(); }, POLL_MS);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [jobId, goTo, setSubStage, setSegments]);
+  }, [jobId, goTo, setSubStage, setSegments, getToken]);
 
   const currentIdx = stageIndex(currentStage);
 

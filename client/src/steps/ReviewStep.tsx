@@ -1,4 +1,5 @@
 import { useState, useContext, useCallback } from 'react';
+import { useAuth } from '@clerk/react';
 import { WizardContext } from '../App';
 import { updateSegments, approveJob } from '../api/jobs';
 import type { Segment } from '../api/jobs';
@@ -11,6 +12,7 @@ function formatTime(seconds: number): string {
 
 export default function ReviewStep() {
   const { jobId, language, goTo, segments: initialSegments } = useContext(WizardContext);
+  const { getToken } = useAuth();
 
   const [segments, setSegments] = useState<Segment[]>(initialSegments);
   const [loading, setLoading] = useState(false);
@@ -27,15 +29,16 @@ export default function ReviewStep() {
     setLoading(true);
     setError(null);
     try {
-      await updateSegments(jobId, segments);
-      await approveJob(jobId);
+      const token = await getToken() ?? undefined;
+      await updateSegments(jobId, segments, token);
+      await approveJob(jobId, token);
       goTo(3); // briefly back to progress for TTS generation
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to approve');
     } finally {
       setLoading(false);
     }
-  }, [jobId, segments, goTo]);
+  }, [jobId, segments, goTo, getToken]);
 
   const LANG_NAMES: Record<string, string> = { mr: 'Marathi', hi: 'Hindi', pa: 'Punjabi', kn: 'Kannada' };
   const langName = LANG_NAMES[language] ?? language;

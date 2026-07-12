@@ -13,9 +13,10 @@ import uuid
 import redis
 from rq import Queue
 from rq.job import Job
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
+from app.auth import require_auth
 from app.config import settings
 from app.logger import get_logger
 from app.services import gcs
@@ -65,7 +66,7 @@ class CreateJobResponse(BaseModel):
     status_code=status.HTTP_201_CREATED,
     summary="Create a translation job",
 )
-def create_job(body: CreateJobRequest) -> CreateJobResponse:
+def create_job(body: CreateJobRequest, user_id: str = Depends(require_auth)) -> CreateJobResponse:
     job_id = uuid.uuid4().hex[:12]
     log.info("Creating job %s for object=%s lang=%s voice=%s",
              job_id, body.object_name, body.language, body.voice_id)
@@ -117,7 +118,7 @@ class JobStatusResponse(BaseModel):
     response_model=JobStatusResponse,
     summary="Get job status and metadata",
 )
-def get_job_status(job_id: str) -> JobStatusResponse:
+def get_job_status(job_id: str, user_id: str = Depends(require_auth)) -> JobStatusResponse:
     job = _fetch_job(job_id)
     meta = job.meta
     return JobStatusResponse(
@@ -152,7 +153,7 @@ class UpdateSegmentsRequest(BaseModel):
     status_code=status.HTTP_200_OK,
     summary="Update translated segments (user edits)",
 )
-def update_segments(job_id: str, body: UpdateSegmentsRequest) -> dict:
+def update_segments(job_id: str, body: UpdateSegmentsRequest, user_id: str = Depends(require_auth)) -> dict:
     job = _fetch_job(job_id)
 
     if job.meta.get("status") != "awaiting_review":
@@ -176,7 +177,7 @@ def update_segments(job_id: str, body: UpdateSegmentsRequest) -> dict:
     status_code=status.HTTP_200_OK,
     summary="Approve translations and start TTS",
 )
-def approve_job(job_id: str) -> dict:
+def approve_job(job_id: str, user_id: str = Depends(require_auth)) -> dict:
     job = _fetch_job(job_id)
 
     if job.meta.get("status") != "awaiting_review":
@@ -216,7 +217,7 @@ class DownloadResponse(BaseModel):
     response_model=DownloadResponse,
     summary="Get download URL for processed audio",
 )
-def get_download_url(job_id: str) -> DownloadResponse:
+def get_download_url(job_id: str, user_id: str = Depends(require_auth)) -> DownloadResponse:
     job = _fetch_job(job_id)
 
     if job.meta.get("status") != "complete":

@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     elevenlabs_api_key: str
     bhashini_api_key: str
 
+    # Auth — Stage 5 (Clerk)
+    clerk_secret_key: str
+    clerk_jwks_public_key: str
+
     # Frontend (Stage 4)
     vite_api_server_url: str
 

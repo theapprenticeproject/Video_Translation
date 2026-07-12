@@ -1141,3 +1141,215 @@ body {
     padding: 12px var(--sp-8);
   }
 }
+
+/* ================================================================
+   AUTH — Stage 5
+   ================================================================ */
+
+/* ── Header UserButton slot ──────────────────────────────────────── */
+.header-top {
+  /* keep existing flex layout but push user btn to far right */
+  justify-content: space-between;
+}
+
+.header-user-btn {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+/* Clerk avatar size match */
+.clerk-avatar-box {
+  width: 28px !important;
+  height: 28px !important;
+}
+
+/* Clerk popover card — tape-deck palette */
+.clerk-popover-card {
+  background: var(--c-bg) !important;
+  border: 1px solid var(--c-graphite) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.55) !important;
+  font-family: var(--f-ui) !important;
+}
+
+.clerk-popover-action {
+  color: var(--c-paper) !important;
+  font-family: var(--f-ui) !important;
+}
+
+.clerk-popover-action:hover {
+  background: var(--c-graphite-dim) !important;
+  color: var(--c-amber) !important;
+}
+
+.clerk-popover-footer {
+  border-top-color: var(--c-graphite) !important;
+}
+
+/* ── Auth gate overlay — glassmorphism / blur ────────────────────── */
+.layout--blurred {
+  filter: blur(5px);
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.45;
+}
+
+.auth-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-6);
+  /* Subtle dark scrim over the blurred app */
+  background: rgba(14, 18, 16, 0.6);
+  backdrop-filter: blur(2px);
+  animation: gate-appear var(--dur-std) var(--ease-decel) both;
+}
+
+@keyframes gate-appear {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-gate { animation: none; }
+}
+
+.auth-gate__card {
+  background: rgba(14, 18, 16, 0.82);
+  border: 1px solid var(--c-graphite);
+  border-radius: 6px;
+  padding: var(--sp-12) var(--sp-10);
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-4);
+  text-align: center;
+  /* Glassmorphic depth */
+  box-shadow:
+    0 1px 0 rgba(243, 239, 230, 0.06) inset,
+    0 24px 64px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(20px);
+  animation: card-rise var(--dur-slow) var(--ease-decel) both;
+}
+
+@keyframes card-rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-gate__card { animation: none; }
+}
+
+.auth-gate__logo {
+  font-family: var(--f-display);
+  font-size: var(--t-sm);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--c-paper-dim);
+  margin-bottom: var(--sp-2);
+}
+
+.auth-gate__heading {
+  font-family: var(--f-display);
+  font-size: var(--t-2xl);
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  color: var(--c-paper);
+  text-wrap: balance;
+  margin-bottom: 0;
+}
+
+.auth-gate__sub {
+  font-size: var(--t-sm);
+  color: var(--c-paper-dim);
+  line-height: 1.6;
+  max-width: 32ch;
+  margin-bottom: var(--sp-2);
+}
+
+.auth-gate__btn {
+  width: 100%;
+  justify-content: center;
+  padding: 13px var(--sp-6);
+  font-size: var(--t-base);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  /* Amber glow on hover */
+  transition: background var(--dur-fast), box-shadow var(--dur-fast);
+}
+
+.auth-gate__btn:hover {
+  box-shadow: 0 0 20px rgba(232, 163, 61, 0.3);
+}
+
+.auth-gate__fine {
+  font-size: var(--t-xs);
+  color: var(--c-paper-dim);
+  margin-top: var(--sp-1);
+}
+
+.auth-gate__link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--c-amber);
+  font-size: inherit;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.auth-gate__link:hover {
+  color: var(--c-paper);
+}
+
+/* ── Clerk modal theme override ──────────────────────────────────── */
+/* These target Clerk's internal CSS vars via the appearance prop.
+   The appearance.variables approach is cleaner but this ensures
+   fallback coverage for any Clerk version. */
+:root {
+  --clerk-bg-default: var(--c-bg);
+  --clerk-bg-primary: var(--c-amber);
+  --clerk-text-primary: var(--c-paper);
+  --clerk-text-secondary: var(--c-paper-dim);
+  --clerk-border-default: var(--c-graphite);
+  --clerk-ring-focus: var(--c-amber);
+}
+
+/* Light mode auth gate adjustments */
+@media (prefers-color-scheme: light) {
+  .layout--blurred {
+    opacity: 0.35;
+  }
+
+  .auth-gate {
+    background: rgba(247, 243, 234, 0.5);
+  }
+
+  .auth-gate__card {
+    background: rgba(247, 243, 234, 0.9);
+    border-color: var(--c-graphite);
+    box-shadow:
+      0 1px 0 rgba(28, 27, 23, 0.06) inset,
+      0 24px 64px rgba(0, 0, 0, 0.15);
+  }
+
+  .auth-gate__heading { color: var(--c-paper); }
+  .auth-gate__sub     { color: var(--c-paper-dim); }
+  .auth-gate__logo    { color: var(--c-paper-dim); }
+}
+
+/* ── Responsive auth card ────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .auth-gate__card {
+    padding: var(--sp-10) var(--sp-6);
+  }
+}

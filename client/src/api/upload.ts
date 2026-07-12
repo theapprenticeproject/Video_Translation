@@ -9,11 +9,12 @@ export interface SignedUrlResponse {
 export async function getSignedUploadUrl(
   filename: string,
   contentType: string,
+  token?: string,
 ): Promise<SignedUrlResponse> {
   return api<SignedUrlResponse>('/api/upload/signed-url', {
     method: 'POST',
     body: JSON.stringify({ filename, content_type: contentType }),
-  });
+  }, token);
 }
 
 /** Step 0.2 — PUT the file directly to GCS (browser → GCS, bypasses backend). */
@@ -46,3 +47,4 @@ export function uploadFileToGCS(
     xhr.send(file);
   });
 }
+

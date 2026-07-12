@@ -1,4 +1,5 @@
 import { useState, useContext, useCallback } from 'react';
+import { useAuth } from '@clerk/react';
 import { WizardContext } from '../App';
 import { createJob } from '../api/jobs';
 
@@ -12,6 +13,7 @@ const LANGUAGES = [
 export default function ConfigureStep() {
   const { objectName, language, voiceId, setLanguage, setVoiceId, setJobId, goTo } =
     useContext(WizardContext);
+  const { getToken } = useAuth();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +23,8 @@ export default function ConfigureStep() {
     setLoading(true);
     setError(null);
     try {
-      const { job_id } = await createJob(objectName, language, voiceId.trim());
+      const token = await getToken() ?? undefined;
+      const { job_id } = await createJob(objectName, language, voiceId.trim(), token);
       setJobId(job_id);
       goTo(3);
     } catch (err) {
@@ -29,7 +32,7 @@ export default function ConfigureStep() {
     } finally {
       setLoading(false);
     }
-  }, [objectName, language, voiceId, setJobId, goTo]);
+  }, [objectName, language, voiceId, setJobId, goTo, getToken]);
 
   return (
     <div className="configure-step">
