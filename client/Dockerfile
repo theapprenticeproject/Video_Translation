@@ -4,7 +4,7 @@ FROM node:24-alpine AS dev
 
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@11.11.0 --activate
 
 COPY package.json pnpm-lock.yaml ./
 ENV CI=true
