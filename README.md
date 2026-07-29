@@ -372,15 +372,11 @@ Currently, the Translation source language is fixed as **Hindi** (`hi`), also th
 
 ---
 
-## 5. Roadmap & Future Work
+## 5. Possible Future Add-ons
 
 | Feature | Notes |
 |---|---|
-| **Job history & gallery** | Stage 6 (optional) — SQLite or JSON store for per-user job history and audio gallery view. |
-| **More Indic languages** | Bhashini supports 22 scheduled languages — extend the language dropdown with additional `target_langcode` values. |
-| **Video mux output** | Re-integrate FFmpeg muxing (translated audio + original video) to output a localized video file, not just audio. |
-| **On-screen text (OCR) localization** | Re-integrate Google Video Intelligence API + Bhashini + FFmpeg subtitle overlay from the prior Frappe-based pipeline. |
-| **Automatic voice detection** | Use ElevenLabs speaker detection to auto-suggest a matching voice ID, removing the manual voice ID input step. |
+| **History & gallery** | Stage 6 (optional) — Database for per-user job history and audio gallery view. |
 | **Multiple speaker support** | Segment TTS by detected speaker, apply per-speaker voice IDs. |
-| **Batch processing** | Queue multiple files in a single session and process concurrently via multiple workers. |
-| **Worker scaling** | Expose `WORKER_COUNT` in compose to allow horizontal scaling of RQ workers without compose file edits. |
+| **Automatic Voice ID Support** | Saving previously used ElevenLabs Voice IDs, or populate a dropdown selection menu in job creation UI. |
+| **Advanced Voice Controls** | Fine-grained TTS customization (voice expressions, speech speed adjustments, and multi-voice scripts). |
