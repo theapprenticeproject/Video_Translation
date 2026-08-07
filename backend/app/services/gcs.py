@@ -46,7 +46,26 @@ def get_client() -> storage.Client:
 
 
 def _bucket() -> storage.Bucket:
-    return get_client().bucket(settings.gcs_bucket_name)
+    bucket = get_client().bucket(settings.gcs_bucket_name)
+    return bucket
+
+
+def ensure_bucket_cors():
+    """Attempt to configure CORS on the GCS bucket so browser PUT uploads succeed."""
+    try:
+        bucket = _bucket()
+        origins = [settings.client_cors_origin_url, "http://localhost:5173", "http://127.0.0.1:5173", "https://ai-translation.theapprenticeproject.org"]
+        cors_rule = {
+            "origin": list(set([o for o in origins if o])),
+            "method": ["GET", "PUT", "POST", "DELETE", "HEAD", "OPTIONS"],
+            "responseHeader": ["*"],
+            "maxAgeSeconds": 3600,
+        }
+        bucket.cors = [cors_rule]
+        bucket.patch()
+        log.info("Successfully set CORS rules on GCS bucket %s", settings.gcs_bucket_name)
+    except Exception as e:
+        log.warning("Could not auto-set GCS bucket CORS rules: %s", e)
 
 
 # --------------------------------------------------------------------------- #
@@ -60,8 +79,8 @@ def make_object_name(filename: str, prefix: str = "originals") -> str:
     """
     uid = uuid.uuid4().hex[:8]
     safe_name = filename.replace(" ", "_")
-    bucket_prefix = settings.gcs_bucket_prefix
-    return f"{bucket_prefix}/{prefix}/{uid}_{safe_name}"
+    parts = [p.strip("/") for p in [settings.gcs_bucket_prefix, prefix, f"{uid}_{safe_name}"] if p and p.strip("/")]
+    return "/".join(parts)
 
 
 def get_resumable_upload_url(object_name: str, content_type: str) -> str:
@@ -89,6 +108,13 @@ def upload_bytes(object_name: str, data: bytes, content_type: str = "application
     blob.upload_from_string(data, content_type=content_type)
     log.info("Uploaded %d bytes to gs://%s/%s",
              len(data), settings.gcs_bucket_name, object_name)
+
+
+def upload_file_stream(object_name: str, file_obj, content_type: str = "application/octet-stream") -> None:
+    """Upload a file stream directly from backend to GCS."""
+    blob = _bucket().blob(object_name)
+    blob.upload_from_file(file_obj, content_type=content_type)
+    log.info("Uploaded file stream to gs://%s/%s", settings.gcs_bucket_name, object_name)
 
 
 def get_signed_download_url(object_name: str, expiry_minutes: int = 60) -> str:

@@ -25,6 +25,11 @@ app.include_router(jobs.router)
 async def on_startup() -> None:
     log.info("Localizer AI backend starting up")
     log.info("CORS origin: %s", settings.client_cors_origin_url)
+    try:
+        from app.services.gcs import ensure_bucket_cors
+        ensure_bucket_cors()
+    except Exception as exc:
+        log.warning("CORS setup error: %s", exc)
 
 
 @app.get("/health")

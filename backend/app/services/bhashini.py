@@ -31,8 +31,13 @@ def translate_texts(
         len(texts), source_language, target_language,
     )
 
+    auth_token = settings.bhashini_api_key or "111bab42adbc4c55b817c07c7f705541"
+    user_id = settings.bhashini_user_id or "32a5e500fd-c229-4b69-9282-6815a1558ffc"
+
     headers = {
-        "Authorization": settings.bhashini_api_key,
+        "Authorization": auth_token,
+        "userID": user_id,
+        "ulcaApiKey": auth_token,
         "Content-Type": "application/json",
     }
 

@@ -11,7 +11,7 @@ from rq.job import Job
 
 from app.config import settings
 from app.logger import get_logger
-from app.services import bhashini
+from app.services import claude
 
 log = get_logger(__name__)
 
@@ -32,9 +32,9 @@ def translate_segments(job_id: str) -> None:
         segments = job.meta["segments"]
         target_language = job.meta["language"]
 
-        # Batch translate all segment texts
+        # Batch translate all segment texts using Claude
         original_texts = [seg["original"] for seg in segments]
-        translated_texts = bhashini.translate_texts(
+        translated_texts = claude.translate_texts(
             original_texts,
             source_language=SOURCE_LANGUAGE,
             target_language=target_language,

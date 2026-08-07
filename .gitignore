@@ -10,3 +10,6 @@ wheels/
 .venv
 
 .env
+.env.local
+backend/.env.local
+ai-creation-tap-gcs.json

@@ -1,7 +1,7 @@
 import { useRef, useState, useContext, useCallback } from 'react';
 import { useAuth } from '@clerk/react';
 import { WizardContext } from '../App';
-import { getSignedUploadUrl, uploadFileToGCS } from '../api/upload';
+import { getSignedUploadUrl, uploadFileToGCS, uploadFileDirectToBackend } from '../api/upload';
 
 const ACCEPTED = ['.mp3', '.mp4', '.wav', '.m4a', '.webm'];
 const ACCEPTED_MIME = ['audio/mpeg', 'audio/mp4', 'video/mp4', 'audio/wav', 'audio/x-wav', 'audio/webm', 'video/webm'];
@@ -23,12 +23,13 @@ export default function UploadStep() {
   const [error, setError] = useState<string | null>(null);
 
   const handleFile = useCallback((f: File) => {
-    if (!ACCEPTED_MIME.includes(f.type) && !ACCEPTED.some(ext => f.name.endsWith(ext))) {
-      setError(`Unsupported format. Accepted: ${ACCEPTED.join(', ')}`);
+    setError(null);
+    const ext = '.' + f.name.split('.').pop()?.toLowerCase();
+    if (!ACCEPTED.includes(ext) && !ACCEPTED_MIME.includes(f.type)) {
+      setError(`Format not supported. Please use: ${ACCEPTED.join(', ')}`);
       return;
     }
     setFile(f);
-    setError(null);
   }, []);
 
   const onDragOver = useCallback((e: React.DragEvent) => {
@@ -36,7 +37,10 @@ export default function UploadStep() {
     setDragging(true);
   }, []);
 
-  const onDragLeave = useCallback(() => setDragging(false), []);
+  const onDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+  }, []);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -66,9 +70,17 @@ export default function UploadStep() {
     setProgress(0);
     try {
       const token = await getToken() ?? undefined;
-      const { upload_url, object_name } = await getSignedUploadUrl(file.name, file.type || 'application/octet-stream', token);
-      await uploadFileToGCS(upload_url, file, setProgress);
-      setObjectName(object_name);
+      let finalObjectName = '';
+      try {
+        const { upload_url, object_name } = await getSignedUploadUrl(file.name, file.type || 'application/octet-stream', token);
+        await uploadFileToGCS(upload_url, file, setProgress);
+        finalObjectName = object_name;
+      } catch (gcsErr) {
+        console.warn('Direct GCS upload failed, falling back to direct server upload:', gcsErr);
+        const res = await uploadFileDirectToBackend(file, token, setProgress);
+        finalObjectName = res.object_name;
+      }
+      setObjectName(finalObjectName);
       goTo(2);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed');

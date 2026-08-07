@@ -48,3 +48,46 @@ export function uploadFileToGCS(
   });
 }
 
+const BASE = (import.meta.env.VITE_API_SERVER_URL as string) || '';
+
+/** Step 0.2 (Fallback) — Upload file directly to backend endpoint using FormData. */
+export function uploadFileDirectToBackend(
+  file: File,
+  token?: string,
+  onProgress?: (fraction: number) => void,
+): Promise<SignedUrlResponse> {
+  return new Promise((resolve, reject) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${BASE}/api/upload/direct`);
+    if (token) {
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    }
+
+    if (onProgress) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress(e.loaded / e.total);
+      };
+    }
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const res = JSON.parse(xhr.responseText) as SignedUrlResponse;
+          resolve(res);
+        } catch (e) {
+          reject(e);
+        }
+      } else {
+        reject(new Error(`Direct backend upload failed: ${xhr.status}`));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('Network error during direct upload'));
+    xhr.onabort = () => reject(new Error('Direct upload was aborted'));
+    xhr.send(formData);
+  });
+}
+

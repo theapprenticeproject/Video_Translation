@@ -6,7 +6,7 @@ POST /api/upload/signed-url
   Returns: { "upload_url": "<signed GCS PUT url>", "object_name": "originals/abc_video.mp4" }
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import BaseModel
 
 from app.auth import require_auth
@@ -50,3 +50,27 @@ def get_signed_url(body: SignedUrlRequest, user_id: str = Depends(require_auth))
         ) from exc
 
     return SignedUrlResponse(upload_url=upload_url, object_name=object_name)
+
+
+@router.post(
+    "/direct",
+    response_model=SignedUrlResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Direct server-side upload to GCS",
+)
+def upload_direct(
+    file: UploadFile = File(...),
+    user_id: str = Depends(require_auth),
+) -> SignedUrlResponse:
+    log.info("Direct server upload received for file=%s type=%s", file.filename, file.content_type)
+    try:
+        object_name = gcs.make_object_name(file.filename or "uploaded_media.mp4")
+        gcs.upload_file_stream(object_name, file.file, file.content_type or "application/octet-stream")
+    except Exception as exc:
+        log.error("Direct upload failed: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to upload file to GCS.",
+        ) from exc
+
+    return SignedUrlResponse(upload_url="", object_name=object_name)

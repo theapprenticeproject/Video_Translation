@@ -15,7 +15,11 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
-    env_file: .env
+    env_file:
+      - path: .env
+        required: true
+      - path: .env.local
+        required: false
     ports:
       - "8000:8000"
     networks:
@@ -34,7 +38,11 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
-    env_file: .env
+    env_file:
+      - path: .env
+        required: true
+      - path: .env.local
+        required: false
     command: ["uv", "run", "python", "-m", "app.worker"]
     networks:
       - app-network
@@ -50,7 +58,11 @@ services:
       dockerfile: Dockerfile
       target: dev
     restart: unless-stopped
-    env_file: .env
+    env_file:
+      - path: .env
+        required: true
+      - path: .env.local
+        required: false
     ports:
       - "5173:5173"
     volumes:
