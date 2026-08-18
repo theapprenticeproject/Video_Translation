@@ -12,11 +12,12 @@ from rq.job import Job
 from app.config import settings
 from app.logger import get_logger
 from app.services import claude
+from app.services.db import save_job_meta
 
 log = get_logger(__name__)
 
-# Source language for the original audio (assumed Hindi for now)
-SOURCE_LANGUAGE = "hi"
+# Source language for the original audio is now fetched dynamically from job.meta
+
 
 
 def translate_segments(job_id: str) -> None:
@@ -27,16 +28,18 @@ def translate_segments(job_id: str) -> None:
     try:
         job.meta["stage"] = "translating"
         job.save_meta()
+        save_job_meta(job_id, job.meta)
         log.info("[%s] Starting translation", job_id)
 
         segments = job.meta["segments"]
         target_language = job.meta["language"]
 
+        source_language = job.meta.get("source_language", "hi")
         # Batch translate all segment texts using Claude
         original_texts = [seg["original"] for seg in segments]
         translated_texts = claude.translate_texts(
             original_texts,
-            source_language=SOURCE_LANGUAGE,
+            source_language=source_language,
             target_language=target_language,
         )
 
@@ -48,6 +51,7 @@ def translate_segments(job_id: str) -> None:
         job.meta["status"] = "awaiting_review"
         job.meta["stage"] = "awaiting_review"
         job.save_meta()
+        save_job_meta(job_id, job.meta)
 
         log.info("[%s] Translation complete, awaiting user review", job_id)
         # STOP here — do NOT enqueue next task.
@@ -59,3 +63,4 @@ def translate_segments(job_id: str) -> None:
         job.meta["status"] = "failed"
         job.meta["error"] = str(exc)
         job.save_meta()
+        save_job_meta(job_id, job.meta)

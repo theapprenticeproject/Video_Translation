@@ -20,6 +20,7 @@ export interface WizardContextValue {
   objectName: string | null;
   jobId: string | null;
   language: string;
+  sourceLanguage: string;
   voiceId: string;
   subStage: string | null;
   segments: Segment[];
@@ -29,6 +30,7 @@ export interface WizardContextValue {
   setObjectName: (v: string) => void;
   setJobId: (v: string) => void;
   setLanguage: (v: string) => void;
+  setSourceLanguage: (v: string) => void;
   setVoiceId: (v: string) => void;
   setSubStage: (v: string | null) => void;
   setSegments: (v: Segment[]) => void;
@@ -41,6 +43,7 @@ export const WizardContext = createContext<WizardContextValue>({
   objectName: null,
   jobId: null,
   language: 'mr',
+  sourceLanguage: 'hi',
   voiceId: '',
   subStage: null,
   segments: [],
@@ -49,6 +52,7 @@ export const WizardContext = createContext<WizardContextValue>({
   setObjectName: noop,
   setJobId: noop,
   setLanguage: noop,
+  setSourceLanguage: noop,
   setVoiceId: noop,
   setSubStage: noop,
   setSegments: noop,
@@ -119,13 +123,14 @@ function AuthGate() {
 
 // ─── App ─────────────────────────────────────────────────────────
 export default function App() {
-  const [step,       setStep]       = useState<Step>(1);
-  const [objectName, setObjectName] = useState<string | null>(null);
-  const [jobId,      setJobId]      = useState<string | null>(null);
-  const [language,   setLanguage]   = useState('mr');
-  const [voiceId,    setVoiceId]    = useState('');
-  const [subStage,   setSubStage]   = useState<string | null>(null);
-  const [segments,   setSegments]   = useState<Segment[]>([]);
+  const [step,           setStep]           = useState<Step>(1);
+  const [objectName,     setObjectName]     = useState<string | null>(null);
+  const [jobId,          setJobId]          = useState<string | null>(null);
+  const [sourceLanguage, setSourceLanguage] = useState('hi');
+  const [language,       setLanguage]       = useState('mr');
+  const [voiceId,        setVoiceId]        = useState('');
+  const [subStage,       setSubStage]       = useState<string | null>(null);
+  const [segments,       setSegments]       = useState<Segment[]>([]);
 
   const goTo = useCallback((next: Step) => {
     withTransition(() => setStep(next));
@@ -149,11 +154,12 @@ export default function App() {
   // We expose setSegments so ProgressStep can push them before advancing.
 
   const ctxValue: WizardContextValue = {
-    step, objectName, jobId, language, voiceId, subStage, segments,
+    step, objectName, jobId, sourceLanguage, language, voiceId, subStage, segments,
     goTo, reset,
     setObjectName,
     setJobId,
     setLanguage,
+    setSourceLanguage,
     setVoiceId,
     setSubStage,
     setSegments,

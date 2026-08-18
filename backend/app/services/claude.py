@@ -27,7 +27,7 @@ LANGUAGE_MAP = {
     "hi": "Hindi",
     "mr": "Marathi",
     "pa": "Punjabi",
-    "ka": "Kannada",
+    "kn": "Kannada",
     "en": "English",
 }
 

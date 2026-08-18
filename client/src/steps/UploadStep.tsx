@@ -1,7 +1,8 @@
-import { useRef, useState, useContext, useCallback } from 'react';
+import { useRef, useState, useContext, useCallback, useEffect } from 'react';
 import { useAuth } from '@clerk/react';
 import { WizardContext } from '../App';
 import { getSignedUploadUrl, uploadFileToGCS, uploadFileDirectToBackend } from '../api/upload';
+import { listJobs, pollJob, type JobHistoryItem } from '../api/jobs';
 
 const ACCEPTED = ['.mp3', '.mp4', '.wav', '.m4a', '.webm'];
 const ACCEPTED_MIME = ['audio/mpeg', 'audio/mp4', 'video/mp4', 'audio/wav', 'audio/x-wav', 'audio/webm', 'video/webm'];
@@ -11,8 +12,19 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function formatDate(timestamp: number): string {
+  if (!timestamp) return '';
+  const date = new Date(timestamp * 1000);
+  return date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 export default function UploadStep() {
-  const { setObjectName, goTo } = useContext(WizardContext);
+  const { setObjectName, setJobId, setLanguage, setSourceLanguage, setVoiceId, setSegments, goTo } = useContext(WizardContext);
   const { getToken } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -21,6 +33,28 @@ export default function UploadStep() {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+
+  // History state
+  const [history, setHistory] = useState<JobHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+
+  // Load history on mount
+  const loadHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const token = await getToken() ?? undefined;
+      const list = await listJobs(token);
+      setHistory(list);
+    } catch (err) {
+      console.error('Failed to load project history:', err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [getToken]);
+
+  useEffect(() => {
+    void loadHistory();
+  }, [loadHistory]);
 
   const handleFile = useCallback((f: File) => {
     setError(null);
@@ -88,6 +122,56 @@ export default function UploadStep() {
       setUploading(false);
     }
   }, [file, setObjectName, goTo, getToken]);
+
+  const handleResumeProject = async (proj: JobHistoryItem) => {
+    setError(null);
+    setJobId(proj.job_id);
+    setLanguage(proj.language);
+    setSourceLanguage(proj.source_language);
+    setVoiceId(proj.voice_id);
+    
+    if (proj.status === 'awaiting_review') {
+      setUploading(true); // show generic loader spinner while fetching
+      try {
+        const token = await getToken() ?? undefined;
+        const fullJob = await pollJob(proj.job_id, token);
+        setSegments(fullJob.segments || []);
+        goTo(4);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Could not fetch project segments');
+      } finally {
+        setUploading(false);
+      }
+    } else if (proj.status === 'complete') {
+      goTo(5);
+    } else {
+      // processing / failed
+      goTo(3);
+    }
+  };
+
+  const getStageLabel = (stage: string) => {
+    const labels: Record<string, string> = {
+      extracting: 'Extracting audio',
+      transcribing: 'Transcribing speech',
+      translating: 'Translating segments',
+      awaiting_review: 'Ready for review',
+      generating_tts: 'Generating dubbed audio',
+      done: 'Complete',
+    };
+    return labels[stage] || stage;
+  };
+
+  const getStatusClass = (status: string) => {
+    if (status === 'complete') return 'history-item__badge--complete';
+    if (status === 'failed') return 'history-item__badge--failed';
+    if (status === 'awaiting_review') return 'history-item__badge--review';
+    return 'history-item__badge--processing';
+  };
+
+  const getLangBadge = (lang: string) => {
+    return lang.toUpperCase();
+  };
 
   return (
     <div className="upload-step">
@@ -215,6 +299,44 @@ export default function UploadStep() {
         >
           {uploading ? 'Uploading…' : 'Upload & Continue'}
         </button>
+      </div>
+
+      {/* Project History Dashboard */}
+      <div className="project-history-section">
+        <h2 className="history__heading">Past Projects</h2>
+        {historyLoading ? (
+          <div className="history-loading">Loading project history…</div>
+        ) : history.length === 0 ? (
+          <div className="history-empty">No past translations found. Start by dropping a tape above!</div>
+        ) : (
+          <div className="history-list" role="list">
+            {history.map((proj) => (
+              <div 
+                key={proj.job_id} 
+                className="history-item"
+                role="button"
+                onClick={() => handleResumeProject(proj)}
+                title="Click to resume project"
+              >
+                <div className="history-item__main">
+                  <div className="history-item__file-info">
+                    <span className="history-item__filename">{proj.filename}</span>
+                    <span className="history-item__date">{formatDate(proj.created_at)}</span>
+                  </div>
+                  <div className="history-item__meta">
+                    <span className="history-item__lang-direction">
+                      {getLangBadge(proj.source_language)} → {getLangBadge(proj.language)}
+                    </span>
+                    <span className={`history-item__badge ${getStatusClass(proj.status)}`}>
+                      {proj.status === 'processing' ? getStageLabel(proj.stage) : getStageLabel(proj.status)}
+                    </span>
+                  </div>
+                </div>
+                <div className="history-item__chevron">→</div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -15,6 +15,7 @@ from rq import Queue, get_current_job
 from app.config import settings
 from app.logger import get_logger
 from app.services import gcs
+from app.services.db import save_job_meta
 
 log = get_logger(__name__)
 
@@ -26,6 +27,7 @@ def extract_audio(job_id: str) -> None:
     try:
         job.meta["stage"] = "extracting"
         job.save_meta()
+        save_job_meta(job_id, job.meta)
         log.info("[%s] Starting audio extraction", job_id)
 
         gcs_original = job.meta["gcs_original"]
@@ -58,6 +60,7 @@ def extract_audio(job_id: str) -> None:
         job.meta["gcs_audio"] = audio_object_name
         job.meta["stage"] = "transcribing"
         job.save_meta()
+        save_job_meta(job_id, job.meta)
 
         log.info("[%s] Audio extraction complete, enqueuing transcribe", job_id)
         q = Queue("default", connection=conn)
@@ -74,3 +77,4 @@ def extract_audio(job_id: str) -> None:
         job.meta["status"] = "failed"
         job.meta["error"] = str(exc)
         job.save_meta()
+        save_job_meta(job_id, job.meta)

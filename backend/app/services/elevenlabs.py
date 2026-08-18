@@ -6,7 +6,7 @@ STT: Scribe v2 — supports cloud_storage_url (signed GCS URLs)
 TTS: eleven_v3 — latest model, 70+ languages
 """
 
-from elevenlabs import ElevenLabs
+from elevenlabs import ElevenLabs, VoiceSettings
 
 from app.config import settings
 from app.logger import get_logger
@@ -104,3 +104,41 @@ def text_to_speech(text: str, voice_id: str) -> bytes:
 
     log.info("ElevenLabs TTS: received %d bytes of audio", len(audio_bytes))
     return audio_bytes
+
+
+def text_to_speech_with_settings(
+    text: str,
+    voice_id: str,
+    stability: float = 0.5,
+    style: float = 0.0,
+    speed: float = 1.0,
+) -> bytes:
+    """
+    Generate speech from text via ElevenLabs TTS (eleven_v3) with speed and voice settings.
+    Returns raw audio bytes (mp3).
+    """
+    log.info("ElevenLabs TTS settings: generating audio for voice=%s, text_len=%d, speed=%.2f, stability=%.2f, style=%.2f",
+             voice_id, len(text), speed, stability, style)
+    client = _get_client()
+
+    settings = VoiceSettings(
+        stability=stability,
+        similarity_boost=0.75,
+        style=style,
+        use_speaker_boost=True,
+        speed=speed,
+    )
+
+    audio_iter = client.text_to_speech.convert(
+        text=text,
+        voice_id=voice_id,
+        model_id="eleven_v3",
+        voice_settings=settings,
+    )
+
+    # Collect all chunks into bytes
+    audio_bytes = b"".join(audio_iter)
+
+    log.info("ElevenLabs TTS settings: received %d bytes of audio", len(audio_bytes))
+    return audio_bytes
+

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.logger import get_logger
-from app.routes import upload, jobs
+from app.routes import upload, jobs, voices
 
 log = get_logger(__name__)
 
@@ -19,17 +19,13 @@ app.add_middleware(
 
 app.include_router(upload.router)
 app.include_router(jobs.router)
+app.include_router(voices.router)
 
 
 @app.on_event("startup")
 async def on_startup() -> None:
     log.info("Localizer AI backend starting up")
     log.info("CORS origin: %s", settings.client_cors_origin_url)
-    try:
-        from app.services.gcs import ensure_bucket_cors
-        ensure_bucket_cors()
-    except Exception as exc:
-        log.warning("CORS setup error: %s", exc)
 
 
 @app.get("/health")

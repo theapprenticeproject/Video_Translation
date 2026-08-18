@@ -88,16 +88,16 @@ def upload(ssh, file_path):
     with SCPClient(ssh.get_transport()) as scp:
         scp.put(file_path, REMOTE_PATH)
         
-        # Upload local .env.local as .env on the VM
+        # Upload local .env to the VM (prioritize production keys)
+        prod_env = os.path.join(PROJECT_DIR, ".env")
         local_env = os.path.join(PROJECT_DIR, ".env.local")
-        if os.path.exists(local_env):
-            print("Found local .env.local. Uploading to VM as /home/tap-vid/.env...")
+        
+        if os.path.exists(prod_env):
+            print("Found local .env (Live Keys). Uploading to VM as /home/tap-vid/.env...")
+            scp.put(prod_env, "/home/tap-vid/.env")
+        elif os.path.exists(local_env):
+            print("WARNING: No .env found. Falling back to .env.local...")
             scp.put(local_env, "/home/tap-vid/.env")
-        else:
-            local_prod_env = os.path.join(PROJECT_DIR, ".env")
-            if os.path.exists(local_prod_env):
-                print("Uploading local .env to VM as /home/tap-vid/.env...")
-                scp.put(local_prod_env, "/home/tap-vid/.env")
 
     print("Upload complete")
 

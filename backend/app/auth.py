@@ -33,15 +33,15 @@ def require_auth(request: Request) -> str:
     """
     try:
         jwt_key = settings.clerk_jwks_public_key.replace("\\n", "\n").strip()
-        opts = AuthenticateRequestOptions(jwt_key=jwt_key)
+        opts = AuthenticateRequestOptions(jwt_key=jwt_key, clock_skew_in_ms=300000)
         request_state = _clerk.authenticate_request(request, opts)
         if not request_state.is_signed_in and "TOKEN_INVALID_SIGNATURE" in str(getattr(request_state, "reason", "")):
             log.warning("Local PEM key signature failed, falling back to online Clerk JWKS verification...")
-            request_state = _clerk.authenticate_request(request, AuthenticateRequestOptions())
+            request_state = _clerk.authenticate_request(request, AuthenticateRequestOptions(clock_skew_in_ms=300000))
     except Exception as exc:
         log.warning("Clerk authenticate_request raised: %s", exc)
         try:
-            request_state = _clerk.authenticate_request(request, AuthenticateRequestOptions())
+            request_state = _clerk.authenticate_request(request, AuthenticateRequestOptions(clock_skew_in_ms=300000))
         except Exception as fallback_exc:
             raise HTTPException(status_code=401, detail="Unauthorized") from fallback_exc
 
