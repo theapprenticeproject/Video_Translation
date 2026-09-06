@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     bhashini_api_key: str = ""
     bhashini_user_id: str = ""
     anthropic_api_key: str = ""
+    anthropic_model: str = "claude-sonnet-4-6"
 
     # Auth — Stage 5 (Clerk)
     clerk_secret_key: str

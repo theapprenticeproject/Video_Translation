@@ -19,8 +19,9 @@ log = get_logger(__name__)
 
 ANTHROPIC_MESSAGES_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_BATCH_URL = "https://api.anthropic.com/v1/messages/batches"
+ANTHROPIC_VERSION = "2023-06-01"
+ANTHROPIC_BETA_BATCHES = "message-batches-2024-09-24"
 HTTP_TIMEOUT = 150.0
-DEFAULT_MODEL = "claude-sonnet-4-6"
 
 # Map 2-letter codes to full language names for Claude
 LANGUAGE_MAP = {
@@ -30,6 +31,31 @@ LANGUAGE_MAP = {
     "kn": "Kannada",
     "en": "English",
 }
+
+
+def _get_model() -> str:
+    return getattr(settings, "anthropic_model", None) or "claude-sonnet-4-6"
+
+
+def _handle_response_error(res: httpx.Response, action_desc: str) -> None:
+    """Extract and format detailed Anthropic API error messages."""
+    if not res.is_error:
+        return
+
+    error_detail = res.text
+    try:
+        data = res.json()
+        if "error" in data:
+            err_obj = data["error"]
+            err_msg = err_obj.get("message", error_detail)
+            err_type = err_obj.get("type", "error")
+            error_detail = f"[{err_type}] {err_msg}"
+    except Exception:
+        pass
+
+    formatted_msg = f"Anthropic API Error (HTTP {res.status_code}) during {action_desc}: {error_detail}"
+    log.error(formatted_msg)
+    raise RuntimeError(formatted_msg)
 
 
 def translate_texts(
@@ -48,7 +74,7 @@ def translate_texts(
         log.info("Attempting translation via Anthropic Message Batches API...")
         return translate_texts_batch(texts, source_language, target_language)
     except Exception as exc:
-        log.warning("Anthropic Batch API failed or timed out: %s. Falling back to real-time Messages API...", exc)
+        log.warning("Anthropic Batch API failed: %s. Falling back to real-time Messages API...", exc)
         return translate_texts_interactive(texts, source_language, target_language)
 
 
@@ -64,10 +90,12 @@ def translate_texts_batch(
 
     src_name = LANGUAGE_MAP.get(source_language.lower(), source_language)
     tgt_name = LANGUAGE_MAP.get(target_language.lower(), target_language)
+    model = _get_model()
 
     headers = {
         "x-api-key": api_key,
-        "anthropic-version": "2023-06-01",
+        "anthropic-version": ANTHROPIC_VERSION,
+        "anthropic-beta": ANTHROPIC_BETA_BATCHES,
         "content-type": "application/json",
     }
 
@@ -77,7 +105,7 @@ def translate_texts_batch(
         requests_payload.append({
             "custom_id": f"seg_{i}",
             "params": {
-                "model": DEFAULT_MODEL,
+                "model": model,
                 "max_tokens": 500,
                 "messages": [
                     {"role": "user", "content": f"Translate this sentence from {src_name} to {tgt_name}. Return ONLY the translation, nothing else: {text}"}
@@ -92,7 +120,7 @@ def translate_texts_batch(
     # 2. Create message batch
     with httpx.Client(timeout=30.0) as client:
         res = client.post(ANTHROPIC_BATCH_URL, json=body, headers=headers)
-        res.raise_for_status()
+        _handle_response_error(res, "create message batch")
         batch_info = res.json()
         batch_id = batch_info["id"]
 
@@ -110,7 +138,7 @@ def translate_texts_batch(
         time.sleep(5)
         with httpx.Client(timeout=30.0) as client:
             poll_res = client.get(f"{ANTHROPIC_BATCH_URL}/{batch_id}", headers=headers)
-            poll_res.raise_for_status()
+            _handle_response_error(poll_res, f"poll batch status for {batch_id}")
             status_info = poll_res.json()
             status = status_info["processing_status"]
             log.info("Batch status: %s", status)
@@ -126,7 +154,7 @@ def translate_texts_batch(
     log.info("Downloading batch results from Anthropic...")
     with httpx.Client(timeout=30.0) as client:
         results_res = client.get(results_url, headers=headers)
-        results_res.raise_for_status()
+        _handle_response_error(results_res, "download batch results")
 
     lines = results_res.text.strip().split("\n")
     translations = [None] * len(texts)
@@ -162,17 +190,21 @@ def translate_texts_interactive(
 ) -> List[str]:
     """Translate list of texts using the Interactive Messages API with structured tool use."""
     api_key = settings.anthropic_api_key
+    if not api_key:
+        raise ValueError("ANTHROPIC_API_KEY is not configured in settings.")
+
     src_name = LANGUAGE_MAP.get(source_language.lower(), source_language)
     tgt_name = LANGUAGE_MAP.get(target_language.lower(), target_language)
+    model = _get_model()
 
     headers = {
         "x-api-key": api_key,
-        "anthropic-version": "2023-06-01",
+        "anthropic-version": ANTHROPIC_VERSION,
         "content-type": "application/json",
     }
 
     body = {
-        "model": DEFAULT_MODEL,
+        "model": model,
         "max_tokens": 4000,
         "system": f"You are a professional translator and subtitler. Translate the list of sentences from {src_name} to {tgt_name} and return the results using the return_translations tool.",
         "messages": [
@@ -205,7 +237,7 @@ def translate_texts_interactive(
 
     with httpx.Client(timeout=HTTP_TIMEOUT) as client:
         response = client.post(ANTHROPIC_MESSAGES_URL, json=body, headers=headers)
-        response.raise_for_status()
+        _handle_response_error(response, "interactive translation messages API")
 
     result = response.json()
     
@@ -237,17 +269,21 @@ def translate_single_text(
 ) -> str:
     """Translate a single sentence using the standard Messages API (fallback)."""
     api_key = settings.anthropic_api_key
+    if not api_key:
+        raise ValueError("ANTHROPIC_API_KEY is not configured in settings.")
+
     src_name = LANGUAGE_MAP.get(source_language.lower(), source_language)
     tgt_name = LANGUAGE_MAP.get(target_language.lower(), target_language)
+    model = _get_model()
 
     headers = {
         "x-api-key": api_key,
-        "anthropic-version": "2023-06-01",
+        "anthropic-version": ANTHROPIC_VERSION,
         "content-type": "application/json",
     }
 
     body = {
-        "model": DEFAULT_MODEL,
+        "model": model,
         "max_tokens": 500,
         "system": f"You are an expert translator. Translate the text from {src_name} to {tgt_name}. Return ONLY the translation, with no explanation or commentary.",
         "messages": [
@@ -258,7 +294,7 @@ def translate_single_text(
     try:
         with httpx.Client(timeout=30.0) as client:
             res = client.post(ANTHROPIC_MESSAGES_URL, json=body, headers=headers)
-            res.raise_for_status()
+            _handle_response_error(res, f"single translation for '{text}'")
             result = res.json()
             return result["content"][0]["text"].strip()
     except Exception as exc:

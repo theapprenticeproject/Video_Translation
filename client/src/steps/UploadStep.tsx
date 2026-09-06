@@ -4,8 +4,8 @@ import { WizardContext } from '../App';
 import { getSignedUploadUrl, uploadFileToGCS, uploadFileDirectToBackend } from '../api/upload';
 import { listJobs, pollJob, type JobHistoryItem } from '../api/jobs';
 
-const ACCEPTED = ['.mp3', '.mp4', '.wav', '.m4a', '.webm'];
-const ACCEPTED_MIME = ['audio/mpeg', 'audio/mp4', 'video/mp4', 'audio/wav', 'audio/x-wav', 'audio/webm', 'video/webm'];
+const ACCEPTED = ['.mp3', '.mp4', '.wav', '.m4a', '.aac', '.webm'];
+const ACCEPTED_MIME = ['audio/mpeg', 'audio/mp4', 'video/mp4', 'audio/wav', 'audio/x-wav', 'audio/x-m4a', 'audio/aac', 'audio/webm', 'video/webm'];
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;

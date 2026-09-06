@@ -61,7 +61,7 @@ def transcribe(job_id: str) -> None:
             job_id,
             job_id=f"{job_id}_translate",
             meta=job.meta,
-            job_timeout=900,
+            job_timeout=1500,
         )
 
     except Exception as exc:

@@ -1,8 +1,9 @@
-import { useState, useContext, useCallback, useEffect } from 'react';
+import { useState, useContext, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '@clerk/react';
 import { WizardContext } from '../App';
 import { updateSegments, approveJob } from '../api/jobs';
 import { getVoices, type Voice } from '../api/voices';
+import { previewTTS } from '../api/tts';
 import type { Segment } from '../api/jobs';
 
 function formatTime(seconds: number): string {
@@ -20,6 +21,10 @@ export default function ReviewStep() {
   const [expandedSegments, setExpandedSegments] = useState<Record<number, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Live preview state
+  const [previewingSegment, setPreviewingSegment] = useState<number | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Load voices on mount
   useEffect(() => {
@@ -49,6 +54,38 @@ export default function ReviewStep() {
   const toggleSettings = useCallback((index: number) => {
     setExpandedSegments(prev => ({ ...prev, [index]: !prev[index] }));
   }, []);
+
+  const handlePreview = useCallback(async (seg: Segment) => {
+    try {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      
+      setPreviewingSegment(seg.index);
+      const token = await getToken() ?? undefined;
+      const url = await previewTTS(
+        seg.translated,
+        seg.voice_id || defaultVoiceId,
+        seg.speed ?? 1.0,
+        seg.stability ?? 0.5,
+        seg.style ?? 0.0,
+        token
+      );
+      
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      
+      audio.onended = () => {
+        setPreviewingSegment(null);
+      };
+      
+      await audio.play();
+    } catch (err) {
+      console.error('Preview failed:', err);
+      alert(err instanceof Error ? err.message : 'Preview failed');
+      setPreviewingSegment(null);
+    }
+  }, [defaultVoiceId, getToken]);
 
   const handleApprove = useCallback(async () => {
     if (!jobId) return;
@@ -211,6 +248,17 @@ export default function ReviewStep() {
                         onChange={(e) => handleSegmentSettingChange(seg.index, 'style', parseFloat(e.target.value))}
                         className="slider-input"
                       />
+                    </div>
+                    
+                    <div className="control-slider" style={{ marginTop: 'var(--sp-2)' }}>
+                      <button 
+                        type="button" 
+                        className="btn btn--small btn--ghost" 
+                        onClick={() => handlePreview(seg)}
+                        disabled={previewingSegment !== null && previewingSegment !== seg.index}
+                      >
+                        {previewingSegment === seg.index ? '🔊 Playing...' : '▶ Preview Voice'}
+                      </button>
                     </div>
                   </div>
                 )}

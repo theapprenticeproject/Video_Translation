@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.logger import get_logger
-from app.routes import upload, jobs, voices
+from app.routes import upload, jobs, voices, tts_preview
 
 log = get_logger(__name__)
 
@@ -20,6 +20,7 @@ app.add_middleware(
 app.include_router(upload.router)
 app.include_router(jobs.router)
 app.include_router(voices.router)
+app.include_router(tts_preview.router)
 
 
 @app.on_event("startup")

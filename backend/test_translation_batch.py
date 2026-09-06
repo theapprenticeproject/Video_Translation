@@ -27,7 +27,7 @@ def run():
         print("Error: ANTHROPIC_API_KEY is empty in settings! Make sure .env or .env.local contains it.")
         return
 
-    print("Selected Model:", claude.DEFAULT_MODEL)
+    print("Selected Model:", claude._get_model())
     print("Starting batch translation check...")
     try:
         res = claude.translate_texts(test_texts, "hi", "mr")
