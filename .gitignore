@@ -9,7 +9,11 @@ wheels/
 # Virtual environments
 .venv
 
+# Environment and Secrets
 .env
-.env.local
+.env.*
+*.env
+backend/.env
+backend/.env.*
 backend/.env.local
 ai-creation-tap-gcs.json

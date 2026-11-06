@@ -44,6 +44,7 @@ def speech_to_text(audio_url: str) -> list[dict]:
     # Group word-level results into sentence segments
     segments: list[dict] = []
     current_text: list[str] = []
+    current_words: list[dict] = []
     current_start: float | None = None
     current_end: float = 0
 
@@ -59,6 +60,11 @@ def speech_to_text(audio_url: str) -> list[dict]:
             current_start = start
         current_end = end
         current_text.append(word_text)
+        current_words.append({
+            "text": word_text,
+            "start": start,
+            "end": end
+        })
 
         # Split on sentence-ending punctuation
         stripped = word_text.rstrip()
@@ -67,8 +73,10 @@ def speech_to_text(audio_url: str) -> list[dict]:
                 "text": " ".join(current_text).strip(),
                 "start": current_start,
                 "end": current_end,
+                "words": current_words,
             })
             current_text = []
+            current_words = []
             current_start = None
             current_end = 0
 
@@ -78,6 +86,7 @@ def speech_to_text(audio_url: str) -> list[dict]:
             "text": " ".join(current_text).strip(),
             "start": current_start or 0,
             "end": current_end,
+            "words": current_words,
         })
 
     log.info("ElevenLabs STT: got %d segments", len(segments))

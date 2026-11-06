@@ -206,7 +206,7 @@ def translate_texts_interactive(
     body = {
         "model": model,
         "max_tokens": 4000,
-        "system": f"You are a professional translator and subtitler. Translate the list of sentences from {src_name} to {tgt_name} and return the results using the return_translations tool.",
+        "system": f"You are a professional translator and subtitler. Translate the list of sentences from {src_name} to {tgt_name}. Keep the translations as concise as possible while retaining the original meaning, so they fit within the same spoken duration. Return the results using the return_translations tool.",
         "messages": [
             {
                 "role": "user",

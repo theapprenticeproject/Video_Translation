@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-sonnet-4-6"
 
+    translation_provider: str = "gemini"
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-3.1-flash-lite"
+
     # Auth — Stage 5 (Clerk)
     clerk_secret_key: str
     clerk_jwks_public_key: str

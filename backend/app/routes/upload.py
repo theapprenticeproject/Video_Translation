@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from app.auth import require_auth
 from app.logger import get_logger
-from app.services import gcs
+from app.services import gcs, url_fetcher
 
 log = get_logger(__name__)
 router = APIRouter(prefix="/api/upload", tags=["upload"])
@@ -25,6 +25,37 @@ class SignedUrlRequest(BaseModel):
 class SignedUrlResponse(BaseModel):
     upload_url: str
     object_name: str
+
+
+class UrlUploadRequest(BaseModel):
+    url: str
+
+
+class UrlUploadResponse(BaseModel):
+    object_name: str
+    filename: str
+
+
+@router.post(
+    "/url",
+    response_model=UrlUploadResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Download video from YouTube or Google Drive link and upload to GCS",
+)
+def upload_from_url(
+    body: UrlUploadRequest,
+    user_id: str = Depends(require_auth),
+) -> UrlUploadResponse:
+    log.info("URL upload requested for: %s", body.url)
+    try:
+        object_name, filename = url_fetcher.fetch_media_from_url(body.url)
+        return UrlUploadResponse(object_name=object_name, filename=filename)
+    except Exception as exc:
+        log.error("URL upload failed: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
 
 
 @router.post(

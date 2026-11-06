@@ -1,11 +1,18 @@
 import { api } from './client';
 
+export interface Word {
+  text: string;
+  start: number;
+  end: number;
+}
+
 export interface Segment {
   index: number;
   original: string;
   translated: string;
   start: number;
   end: number;
+  words?: Word[];
   voice_id?: string;
   speed?: number;
   stability?: number;
@@ -91,4 +98,12 @@ export async function getDownloadUrl(jobId: string, token?: string): Promise<Dow
 
 export async function listJobs(token?: string): Promise<JobHistoryItem[]> {
   return api<JobHistoryItem[]>('/api/jobs', undefined, token);
+}
+
+export async function translateSingle(text: string, targetLanguage: string, token?: string): Promise<string> {
+  const data = await api<{ translated_text: string }>('/api/translate/single', {
+    method: 'POST',
+    body: JSON.stringify({ text, target_language: targetLanguage }),
+  }, token);
+  return data.translated_text;
 }

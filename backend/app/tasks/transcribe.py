@@ -45,6 +45,7 @@ def transcribe(job_id: str) -> None:
                 "translated": "",
                 "start": seg.get("start", 0),
                 "end": seg.get("end", 0),
+                "words": seg.get("words", []),
             }
             for i, seg in enumerate(segments)
         ]

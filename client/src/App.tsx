@@ -198,7 +198,7 @@ export default function App() {
           </header>
 
           {/* ── Step content ── */}
-          <main className="layout__main" id="main-content">
+          <main className={`layout__main ${step === 4 ? 'layout__main--wide' : ''}`} id="main-content">
             {/* key forces remount on step change — triggers view-transition */}
             <div className="step-content" key={step}>
               {step === 1 && <UploadStep />}

@@ -11,7 +11,7 @@ from rq.job import Job
 
 from app.config import settings
 from app.logger import get_logger
-from app.services import claude
+from app.services import translator
 from app.services.db import save_job_meta
 
 log = get_logger(__name__)
@@ -35,9 +35,9 @@ def translate_segments(job_id: str) -> None:
         target_language = job.meta["language"]
 
         source_language = job.meta.get("source_language", "hi")
-        # Batch translate all segment texts using Claude
+        # Batch translate all segment texts using configured translation provider (Gemini/Claude/Bhashini)
         original_texts = [seg["original"] for seg in segments]
-        translated_texts = claude.translate_texts(
+        translated_texts = translator.translate_texts(
             original_texts,
             source_language=source_language,
             target_language=target_language,

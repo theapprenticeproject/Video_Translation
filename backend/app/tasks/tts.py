@@ -56,6 +56,8 @@ def generate_tts(job_id: str) -> None:
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             delayed_inputs = []
+            current_audio_time = 0.0
+            last_original_end = 0.0
             
             for seg in segments:
                 text = seg.get("translated", "").strip()
@@ -97,11 +99,35 @@ def generate_tts(job_id: str) -> None:
                 with open(seg_file_path, "wb") as f:
                     f.write(audio_bytes)
                 
-                delay_ms = int(seg.get("start", 0.0) * 1000)
-                if delay_ms < 0:
-                    delay_ms = 0
-                    
+                # Measure exact duration of the generated TTS MP3
+                probe_cmd = [
+                    "ffprobe", "-v", "error", "-show_entries", "format=duration",
+                    "-of", "default=noprint_wrappers=1:nokey=1", seg_file_path
+                ]
+                try:
+                    dur_str = subprocess.check_output(probe_cmd, text=True).strip()
+                    actual_duration = float(dur_str)
+                except Exception as e:
+                    log.warning("[%s] ffprobe failed to measure duration for segment %d, assuming 2.0s: %s", job_id, seg['index'], e)
+                    actual_duration = 2.0
+
+                original_start = seg.get("start", 0.0)
+                original_end = seg.get("end", 0.0)
+
+                # Calculate the original silent gap before this segment started
+                gap = original_start - last_original_end
+                if gap < 0:
+                    gap = 0.0
+
+                # Determine the exact start time for this segment in our new audio timeline
+                start_time = current_audio_time + gap
+                delay_ms = int(start_time * 1000)
+
                 delayed_inputs.append({"file": seg_file_path, "delay": delay_ms})
+
+                # Update trackers for the next loop iteration
+                current_audio_time = start_time + actual_duration
+                last_original_end = original_end
 
             output_path = os.path.join(tmp_dir, "output.mp3")
 

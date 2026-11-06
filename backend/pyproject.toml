@@ -15,4 +15,5 @@ dependencies = [
     "elevenlabs>=1.0.0",
     "clerk-backend-api>=2.0.0",
     "python-multipart>=0.0.12",
+    "yt-dlp>=2025.1.0",
 ]

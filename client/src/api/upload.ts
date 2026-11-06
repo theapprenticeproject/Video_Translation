@@ -91,3 +91,16 @@ export function uploadFileDirectToBackend(
   });
 }
 
+export interface UrlUploadResponse {
+  object_name: string;
+  filename: string;
+}
+
+export async function uploadFromUrl(url: string, token?: string): Promise<UrlUploadResponse> {
+  return api<UrlUploadResponse>('/api/upload/url', {
+    method: 'POST',
+    body: JSON.stringify({ url }),
+  }, token);
+}
+
+
